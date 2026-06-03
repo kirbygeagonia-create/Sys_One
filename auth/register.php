@@ -18,6 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($name) || empty($email) || empty($password)) {
         $error = 'All fields are required.';
+    } elseif (strlen($name) > 100) {
+        $error = 'Name must be 100 characters or fewer.';
+    } elseif (strlen($email) > 255) {
+        $error = 'Email must be 255 characters or fewer.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Invalid email address.';
     } elseif (strlen($password) < 8) {
@@ -51,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-require_once __DIR__ . '/../includes/header.php';
+$pageTitle = 'Sign Up'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="auth-page">

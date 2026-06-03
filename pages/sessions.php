@@ -5,7 +5,23 @@ require_once __DIR__ . '/../config/database.php';
 
 $userId = $_SESSION['user_id'];
 
-// Get all sessions where user is involved
+// Pagination
+$page = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 20;
+$offset = ($page - 1) * $perPage;
+
+// Count total sessions
+$countStmt = $pdo->prepare("
+    SELECT COUNT(*)
+    FROM sessions s
+    JOIN session_requests sr ON s.request_id = sr.id
+    WHERE sr.requester_id = ? OR sr.teacher_id = ?
+");
+$countStmt->execute([$userId, $userId]);
+$totalSessions = (int)$countStmt->fetchColumn();
+$totalPages = max(1, ceil($totalSessions / $perPage));
+
+// Get sessions with pagination
 $stmt = $pdo->prepare("
     SELECT s.*, sr.requester_id, sr.teacher_id, sr.message, sr.skill_id,
            sk.name AS skill_name, sc.name AS category_name, sc.icon AS category_icon,
@@ -20,8 +36,9 @@ $stmt = $pdo->prepare("
     LEFT JOIN session_reviews s2r ON s2r.session_id = s.id AND s2r.reviewer_id = ?
     WHERE sr.requester_id = ? OR sr.teacher_id = ?
     ORDER BY s.scheduled_at DESC
+    LIMIT ? OFFSET ?
 ");
-$stmt->execute([$userId, $userId, $userId]);
+$stmt->execute([$userId, $userId, $userId, $perPage, $offset]);
 $sessions = $stmt->fetchAll();
 
 // Separate pending requests (where user is teacher)
@@ -37,7 +54,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$userId]);
 $pendingRequests = $stmt->fetchAll();
 
-require_once __DIR__ . '/../includes/header.php';
+$pageTitle = 'Sessions'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <h1>Sessions</h1>
@@ -93,6 +110,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <th>Role</th>
                     <th>Duration</th>
                     <th>Status</th>
+                    <th>Chat</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -114,6 +132,15 @@ require_once __DIR__ . '/../includes/header.php';
                             <span class="status-badge status-<?= h($session['status']) ?>">
                                 <?= ucfirst(h($session['status'])) ?>
                             </span>
+                        </td>
+                        <td>
+                            <?php if ($session['status'] === 'scheduled' || $session['status'] === 'completed'): ?>
+                                <button class="btn btn-sm btn-outline" onclick="openModal('chatModal_<?= $session['id'] ?>')" title="Chat about this session">
+                                    <i class="fas fa-comment"></i>
+                                </button>
+                            <?php else: ?>
+                                <span class="text-muted text-sm">—</span>
+                            <?php endif; ?>
                         </td>
                         <td>
                             <?php if ($session['status'] === 'scheduled' && !$session['my_rating']): ?>
@@ -149,6 +176,66 @@ require_once __DIR__ . '/../includes/header.php';
             </tbody>
         </table>
     </div>
+
+    <?php if ($totalPages > 1): ?>
+    <div class="pagination">
+        <?php if ($page > 1): ?>
+            <a href="?page=<?= $page - 1 ?>">&laquo; Prev</a>
+        <?php endif; ?>
+        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+            <?php if ($i == $page): ?>
+                <span class="active"><?= $i ?></span>
+            <?php else: ?>
+                <a href="?page=<?= $i ?>"><?= $i ?></a>
+            <?php endif; ?>
+        <?php endfor; ?>
+        <?php if ($page < $totalPages): ?>
+            <a href="?page=<?= $page + 1 ?>">Next &raquo;</a>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
 <?php endif; ?>
+
+<!-- Chat Modals -->
+<?php foreach ($sessions as $session): ?>
+    <?php if ($session['status'] === 'scheduled' || $session['status'] === 'completed'): ?>
+        <div class="modal-overlay" id="chatModal_<?= $session['id'] ?>">
+            <div class="modal chat-modal">
+                <div class="flex justify-between items-center mb-16">
+                    <h2><i class="fas fa-comment"></i> Chat — <?= h($session['skill_name']) ?></h2>
+                    <button class="modal-close" onclick="closeModal('chatModal_<?= $session['id'] ?>')">&times;</button>
+                </div>
+                <p class="text-muted text-sm mb-16">With <?= h($session['teacher_id'] == $userId ? $session['requester_name'] : $session['teacher_name']) ?></p>
+
+                <div class="chat-messages chat-msg-area">
+                    <?php
+                    $chatMsgs = getSessionMessages($pdo, $session['id'], $userId);
+                    if (empty($chatMsgs)): ?>
+                        <p class="text-muted text-sm text-center chat-empty">No messages yet. Start the conversation!</p>
+                    <?php else: ?>
+                        <?php foreach ($chatMsgs as $msg): ?>
+                            <div class="chat-msg <?= $msg['sender_id'] == $userId ? 'chat-msg-self' : 'chat-msg-other' ?>">
+                                <div class="chat-msg-bubble">
+                                    <p class="chat-msg-text"><?= h($msg['message']) ?></p>
+                                    <span class="chat-msg-time"><?= h($msg['sender_name']) ?>, <?= timeAgo($msg['created_at']) ?></span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+
+                <form method="POST" action="/actions/send_message.php" class="flex gap-8">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="session_id" value="<?= $session['id'] ?>">
+                    <textarea name="message" placeholder="Type your message..." required
+                              class="chat-input"></textarea>
+                    <button type="submit" class="btn btn-primary btn-sm chat-send-btn">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </form>
+            </div>
+        </div>
+    <?php endif; ?>
+<?php endforeach; ?>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

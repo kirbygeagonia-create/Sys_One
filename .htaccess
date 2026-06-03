@@ -1,0 +1,12 @@
+# Protect sensitive files
+<FilesMatch "\.(sql|md|log|env)$">
+    Deny from all
+</FilesMatch>
+
+# Protect setup and test files from web access
+<FilesMatch "^(install|migrate_icons)\.php$">
+    Deny from all
+</FilesMatch>
+
+# Protect sensitive directories
+RedirectMatch 404 /\.git

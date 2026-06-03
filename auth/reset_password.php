@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-require_once __DIR__ . '/../includes/header.php';
+$pageTitle = 'Reset Password'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="auth-page">

@@ -5,6 +5,11 @@
  * Run: php tests/e2e_flow.php
  */
 
+// Restrict to CLI to prevent public access to system internals
+if (php_sapi_name() !== 'cli') {
+    die('This file can only be run from the command line.');
+}
+
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../config/database.php';
 

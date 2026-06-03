@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-require_once __DIR__ . '/../includes/header.php';
+$pageTitle = 'Submit Review'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <h1>Review Session</h1>

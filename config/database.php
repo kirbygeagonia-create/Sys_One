@@ -11,5 +11,6 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
 } catch (PDOException $e) {
-    die("Connection failed: " . $e->getMessage());
+    error_log("DB connection failed: " . $e->getMessage());
+    die("A database error occurred. Please try again later.");
 }

@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // In production, send email. For dev, show the link on screen + log it
             $resetLink = "/auth/reset_password.php?token=$token";
-            setFlash('success', "Password reset link generated (dev mode): <a href=\"$resetLink\">$resetLink</a>");
+            setFlash('success', "Password reset link generated (dev mode): " . $resetLink);
         } else {
             // Don't reveal if email exists
             $sent = true;
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-require_once __DIR__ . '/../includes/header.php';
+$pageTitle = 'Forgot Password'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="auth-page">

@@ -26,6 +26,16 @@ if (!in_array($file['type'], $allowedTypes)) {
     exit;
 }
 
+// Verify actual file content, not just MIME header
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+$actualType = finfo_file($finfo, $file['tmp_name']);
+finfo_close($finfo);
+if (!in_array($actualType, $allowedTypes)) {
+    setFlash('error', 'File type not allowed based on content. Only JPG, PNG, GIF, and WebP.');
+    header('Location: /pages/profile.php?id=' . $userId);
+    exit;
+}
+
 if ($file['size'] > 2 * 1024 * 1024) {
     setFlash('error', 'File too large. Max 2MB.');
     header('Location: /pages/profile.php?id=' . $userId);

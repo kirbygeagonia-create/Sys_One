@@ -1,5 +1,6 @@
-<?php require_once __DIR__ . '/includes/header.php'; ?>
+<?php $pageTitle = 'Home'; require_once __DIR__ . '/includes/header.php'; ?>
 
+</main><!-- close container main to allow full-width hero -->
 <section class="hero">
     <div class="hero-content">
         <h1>Trade Skills, Not Money.</h1>
@@ -23,6 +24,7 @@
     </div>
 </section>
 
+<main class="container main-content">
 <section class="section">
     <div class="container">
         <h2 class="section-title">How It Works</h2>

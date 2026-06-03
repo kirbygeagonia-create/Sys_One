@@ -53,7 +53,9 @@ function addCredits($pdo, $userId, $amount, $type, $counterpartyId = null, $refe
         if ($type === 'earn' || $type === 'bonus') {
             $pdo->prepare("UPDATE users SET credits = credits + ? WHERE id = ?")->execute([$amount, $userId]);
         } elseif ($type === 'spend') {
-            $pdo->prepare("UPDATE users SET credits = credits - ? WHERE id = ?")->execute([$amount, $userId]);
+            // Floor check: prevent negative balance
+            $stmt = $pdo->prepare("UPDATE users SET credits = GREATEST(credits - ?, 0) WHERE id = ?");
+            $stmt->execute([$amount, $userId]);
         }
 
         $pdo->commit();
@@ -148,6 +150,37 @@ function getCreditTransactions($pdo, $userId, $limit = 20) {
     ");
     $stmt->execute([$userId, $limit]);
     return $stmt->fetchAll();
+}
+
+/**
+ * Get total credits earned by a user
+ */
+function getTotalEarned($pdo, $userId) {
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM credit_transactions WHERE user_id = ? AND type = 'earn'");
+    $stmt->execute([$userId]);
+    return (int)$stmt->fetchColumn();
+}
+
+/**
+ * Get total credits spent by a user
+ */
+function getTotalSpent($pdo, $userId) {
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM credit_transactions WHERE user_id = ? AND type = 'spend'");
+    $stmt->execute([$userId]);
+    return (int)$stmt->fetchColumn();
+}
+
+/**
+ * Get total completed session count for a user
+ */
+function getTotalSessions($pdo, $userId) {
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) FROM sessions s
+        JOIN session_requests sr ON s.request_id = sr.id
+        WHERE (sr.requester_id = ? OR sr.teacher_id = ?) AND s.status = 'completed'
+    ");
+    $stmt->execute([$userId, $userId]);
+    return (int)$stmt->fetchColumn();
 }
 
 /**
@@ -255,6 +288,52 @@ function getUnreadCount($pdo, $userId) {
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
     $stmt->execute([$userId]);
     return (int)$stmt->fetchColumn();
+}
+
+/**
+ * ===== MESSAGING =====
+ */
+
+/**
+ * Get all messages for a session (user must be a participant)
+ */
+function getSessionMessages($pdo, $sessionId, $userId) {
+    $stmt = $pdo->prepare("
+        SELECT m.*, u.name AS sender_name
+        FROM messages m
+        JOIN sessions s ON m.session_id = s.id
+        JOIN session_requests sr ON s.request_id = sr.id
+        JOIN users u ON m.sender_id = u.id
+        WHERE m.session_id = ?
+        AND (sr.requester_id = ? OR sr.teacher_id = ?)
+        ORDER BY m.created_at ASC
+    ");
+    $stmt->execute([$sessionId, $userId, $userId]);
+    return $stmt->fetchAll();
+}
+
+/**
+ * Count unread messages across all sessions for a user
+ */
+function countUnreadMessages($pdo, $userId) {
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) FROM messages m
+        JOIN sessions s ON m.session_id = s.id
+        JOIN session_requests sr ON s.request_id = sr.id
+        WHERE (sr.requester_id = ? OR sr.teacher_id = ?)
+        AND m.sender_id != ?
+        AND m.is_read = 0
+    ");
+    $stmt->execute([$userId, $userId, $userId]);
+    return (int)$stmt->fetchColumn();
+}
+
+/**
+ * Mark all messages in a session as read (except messages sent by the current user)
+ */
+function markMessagesRead($pdo, $sessionId, $userId) {
+    $stmt = $pdo->prepare("UPDATE messages SET is_read = 1 WHERE session_id = ? AND sender_id != ?");
+    return $stmt->execute([$sessionId, $userId]);
 }
 
 /**

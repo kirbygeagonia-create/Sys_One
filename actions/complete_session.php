@@ -59,7 +59,7 @@ if ($updated['requester_confirmed'] && $updated['teacher_confirmed']) {
     $requesterId = $session['requester_id'];
     $teacherId = $session['teacher_id'];
 
-    addCredits($pdo, $requesterId, 1, 'spend', $teacherId, 'session', $sessionId, 'Session: ' . $session['skill_name']);
+    // Credit already reserved at request time; teacher earns the credit
     addCredits($pdo, $teacherId, 1, 'earn', $requesterId, 'session', $sessionId, 'Session: ' . $session['skill_name']);
 
     // Notify both parties

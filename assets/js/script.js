@@ -173,6 +173,9 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.innerHTML = '<i class="fas fa-arrow-up"></i>';
     btn.setAttribute('aria-label', 'Back to top');
     document.body.appendChild(btn);
+    btn.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
     window.addEventListener('scroll', function() {
         btn.classList.toggle('visible', window.scrollY > 400);
     });

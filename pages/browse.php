@@ -44,9 +44,11 @@ $totalPages = max(1, ceil($totalResults / $perPage));
 
 // Build data query
 $sql = "
-    SELECT DISTINCT u.id, u.name, u.bio, u.location, u.credits, u.reputation, u.availability,
-           s.name AS skill_name, sc.name AS category_name, sc.icon AS category_icon,
-           uso.proficiency, uso.description AS offer_description
+    SELECT u.id, u.name, u.bio, u.location, u.credits, u.reputation, u.availability,
+           GROUP_CONCAT(DISTINCT s.name ORDER BY s.name SEPARATOR ', ') AS skill_names,
+           GROUP_CONCAT(DISTINCT sc.icon ORDER BY sc.name SEPARATOR ' ') AS category_icons,
+           GROUP_CONCAT(DISTINCT uso.proficiency ORDER BY uso.proficiency SEPARATOR ', ') AS proficiencies,
+           GROUP_CONCAT(DISTINCT s.id ORDER BY s.name SEPARATOR ',') AS skill_ids
     FROM user_skills_offered uso
     JOIN users u ON uso.user_id = u.id
     JOIN skills s ON uso.skill_id = s.id
@@ -71,7 +73,7 @@ if ($search) {
     $params[] = $searchTerm;
 }
 
-$sql .= " ORDER BY u.reputation DESC, u.name LIMIT $perPage OFFSET $offset";
+$sql .= " GROUP BY u.id ORDER BY u.reputation DESC, u.name LIMIT $perPage OFFSET $offset";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
@@ -84,7 +86,7 @@ if ($selectedCategory) {
     $skills = [];
 }
 
-require_once __DIR__ . '/../includes/header.php';
+$pageTitle = 'Find Teachers'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <h1>Find Teachers</h1>
@@ -150,11 +152,20 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php endif; ?>
                 </div>
 
-                <div class="mb-8">
-                    <span class="skill-tag skill-tag-offer">
-                        <i class="fas <?= h($teacher['category_icon']) ?>"></i> <?= h($teacher['skill_name']) ?>
-                    </span>
-                    <small class="text-muted ml-4">(<?= h($teacher['proficiency']) ?>)</small>
+                <div class="mb-8 flex flex-wrap gap-4">
+                    <?php
+                    $skillNames = explode(', ', $teacher['skill_names']);
+                    $icons = explode(' ', $teacher['category_icons']);
+                    $profs = explode(', ', $teacher['proficiencies']);
+                    foreach ($skillNames as $si => $sn):
+                        $icon = $icons[$si] ?? 'fa-star';
+                        $prof = $profs[$si] ?? '';
+                    ?>
+                        <span class="skill-tag skill-tag-offer">
+                            <i class="fas <?= h($icon) ?>"></i> <?= h($sn) ?>
+                            <?php if ($prof): ?><small>(<?= h($prof) ?>)</small><?php endif; ?>
+                        </span>
+                    <?php endforeach; ?>
                 </div>
 
                 <?php if ($teacher['availability']): ?>
@@ -162,14 +173,10 @@ require_once __DIR__ . '/../includes/header.php';
                         <i class="fas fa-clock"></i> <?= h($teacher['availability']) ?>
                     </p>
                 <?php endif; ?>
-                <?php if ($teacher['offer_description']): ?>
-                    <p class="text-muted mb-8">
-                        <?= h(substr($teacher['offer_description'], 0, 150)) ?>
-                    </p>
-                <?php endif; ?>
 
                 <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != $teacher['id']): ?>
-                    <a href="/actions/request_session.php?teacher_id=<?= $teacher['id'] ?>&skill_id=<?= $teacher['skill_id'] ?>"
+                    <?php $firstSkillId = (int) explode(',', $teacher['skill_ids'] ?? '0')[0]; ?>
+                    <a href="/actions/request_session.php?teacher_id=<?= $teacher['id'] ?>&skill_id=<?= $firstSkillId ?>"
                        class="btn btn-primary btn-sm">Request Session</a>
                 <?php endif; ?>
             </div>

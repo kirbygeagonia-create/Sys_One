@@ -43,6 +43,9 @@ if ($session['requester_id'] != $userId && $session['teacher_id'] != $userId) {
 $pdo->prepare("UPDATE sessions SET status = 'cancelled' WHERE id = ?")->execute([$sessionId]);
 $pdo->prepare("UPDATE session_requests SET status = 'declined' WHERE id = ?")->execute([$session['request_id']]);
 
+// Refund the reserved credit to the requester
+addCredits($pdo, $session['requester_id'], 1, 'bonus', null, 'session_refund', $sessionId, 'Refund for cancelled session');
+
 // Notify the other party
 $otherId = $session['requester_id'] == $userId ? $session['teacher_id'] : $session['requester_id'];
 $canceller = getUserById($pdo, $userId);
@@ -50,7 +53,11 @@ createNotification($pdo, $otherId, 'session_cancelled',
     $canceller['name'] . ' cancelled the ' . $session['skill_name'] . ' session.',
     '/pages/sessions.php'
 );
+createNotification($pdo, $session['requester_id'], 'credit_refund',
+    '1 credit has been refunded due to session cancellation.',
+    '/pages/credits.php'
+);
 
-setFlash('info', 'Session cancelled.');
+setFlash('info', 'Session cancelled. Credit refunded.');
 header('Location: /pages/sessions.php');
 exit;

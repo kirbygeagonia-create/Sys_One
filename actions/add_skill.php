@@ -6,25 +6,6 @@ requireCsrf();
 require_once __DIR__ . '/../config/database.php';
 $userId = $_SESSION['user_id'];
 
-// Handle GET remove requests
-if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'remove') {
-    $type = $_GET['type'] ?? '';
-    $skillId = (int)($_GET['skill_id'] ?? 0);
-    if ($skillId) {
-        if ($type === 'offer') {
-            $stmt = $pdo->prepare("DELETE FROM user_skills_offered WHERE user_id = ? AND skill_id = ?");
-        } elseif ($type === 'want') {
-            $stmt = $pdo->prepare("DELETE FROM user_skills_wanted WHERE user_id = ? AND skill_id = ?");
-        }
-        if (isset($stmt)) {
-            $stmt->execute([$userId, $skillId]);
-            setFlash('success', 'Skill removed from your list.');
-        }
-    }
-    header('Location: /pages/skills.php');
-    exit;
-}
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /pages/skills.php');
     exit;
@@ -32,6 +13,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $type = $_POST['type'] ?? '';
 $skillId = (int)($_POST['skill_id'] ?? 0);
+$action = $_POST['action'] ?? '';
+
+// Handle remove action
+if ($action === 'remove') {
+    if (!$skillId || !in_array($type, ['offer', 'want'])) {
+        setFlash('error', 'Invalid request.');
+        header('Location: /pages/skills.php');
+        exit;
+    }
+    if ($type === 'offer') {
+        $stmt = $pdo->prepare("DELETE FROM user_skills_offered WHERE user_id = ? AND skill_id = ?");
+    } else {
+        $stmt = $pdo->prepare("DELETE FROM user_skills_wanted WHERE user_id = ? AND skill_id = ?");
+    }
+    $stmt->execute([$userId, $skillId]);
+    setFlash('success', 'Skill removed from your list.');
+    header('Location: /pages/skills.php');
+    exit;
+}
 
 if (!$skillId || !in_array($type, ['offer', 'want'])) {
     setFlash('error', 'Invalid request.');
@@ -50,6 +50,10 @@ if (!$stmt->fetch()) {
 
 if ($type === 'offer') {
     $proficiency = $_POST['proficiency'] ?? 'intermediate';
+    $allowedProficiency = ['beginner', 'intermediate', 'advanced', 'expert'];
+    if (!in_array($proficiency, $allowedProficiency)) {
+        $proficiency = 'intermediate';
+    }
     $description = trim($_POST['description'] ?? '');
 
     $stmt = $pdo->prepare("SELECT id FROM user_skills_offered WHERE user_id = ? AND skill_id = ?");

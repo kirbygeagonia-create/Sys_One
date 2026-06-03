@@ -7,7 +7,7 @@ $userId = $_SESSION['user_id'];
 $user = getCurrentUser($pdo);
 $transactions = getCreditTransactions($pdo, $userId);
 
-require_once __DIR__ . '/../includes/header.php';
+$pageTitle = 'Credits'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <h1>Credits</h1>
@@ -18,27 +18,15 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="stat-label">Available Credits</div>
     </div>
     <div class="stat-card">
-        <div class="stat-value"><?php
-            $earned = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM credit_transactions WHERE user_id = ? AND type = 'earn'");
-            $earned->execute([$userId]);
-            echo '+' . (int)$earned->fetchColumn();
-        ?></div>
+        <div class="stat-value text-earned">+<?= getTotalEarned($pdo, $userId) ?></div>
         <div class="stat-label">Earned (Teaching)</div>
     </div>
     <div class="stat-card">
-        <div class="stat-value"><?php
-            $spent = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM credit_transactions WHERE user_id = ? AND type = 'spend'");
-            $spent->execute([$userId]);
-            echo '-' . (int)$spent->fetchColumn();
-        ?></div>
+        <div class="stat-value text-spent">-<?= getTotalSpent($pdo, $userId) ?></div>
         <div class="stat-label">Spent (Learning)</div>
     </div>
     <div class="stat-card">
-        <div class="stat-value"><?php
-            $count = $pdo->prepare("SELECT COUNT(*) FROM sessions s JOIN session_requests sr ON s.request_id = sr.id WHERE (sr.requester_id = ? OR sr.teacher_id = ?) AND s.status = 'completed'");
-            $count->execute([$userId, $userId]);
-            echo (int)$count->fetchColumn();
-        ?></div>
+        <div class="stat-value"><?= getTotalSessions($pdo, $userId) ?></div>
         <div class="stat-label">Sessions Done</div>
     </div>
 </div>

@@ -35,7 +35,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$profileId]);
 $taughtSessions = (int)$stmt->fetchColumn();
 
-require_once __DIR__ . '/../includes/header.php';
+$pageTitle = 'Profile'; require_once __DIR__ . '/../includes/header.php';
 
 $isOwner = isset($_SESSION['user_id']) && $_SESSION['user_id'] == $profileId;
 
@@ -47,11 +47,15 @@ if ($isOwner && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_pr
     $location = trim($_POST['location'] ?? '');
 
     if ($name) {
-        $avail = trim($_POST['availability'] ?? '');
-        $stmt = $pdo->prepare("UPDATE users SET name = ?, bio = ?, location = ?, availability = ? WHERE id = ?");
-        $stmt->execute([$name, $bio, $location, $avail, $profileId]);
-        $profile = getUserById($pdo, $profileId);
-        setFlash('success', 'Profile updated!');
+        if (strlen($name) > 100) {
+            setFlash('error', 'Name must be 100 characters or fewer.');
+        } else {
+            $avail = trim($_POST['availability'] ?? '');
+            $stmt = $pdo->prepare("UPDATE users SET name = ?, bio = ?, location = ?, availability = ? WHERE id = ?");
+            $stmt->execute([$name, $bio, $location, $avail, $profileId]);
+            $profile = getUserById($pdo, $profileId);
+            setFlash('success', 'Profile updated!');
+        }
     }
 }
 ?>
@@ -77,6 +81,13 @@ if ($isOwner && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_pr
         <?php endif; ?>
         <?php if ($profile['bio']): ?>
             <p class="profile-bio"><?= h($profile['bio']) ?></p>
+        <?php endif; ?>
+
+        <?php if (!$isOwner && isset($_SESSION['user_id'])): ?>
+            <?php if (!empty($offeredSkills)): ?>
+                <a href="/actions/request_session.php?teacher_id=<?= $profileId ?>&skill_id=<?= $offeredSkills[0]['skill_id'] ?>"
+                   class="btn btn-primary btn-sm mt-8">Request Session</a>
+            <?php endif; ?>
         <?php endif; ?>
 
         <?php if ($isOwner): ?>

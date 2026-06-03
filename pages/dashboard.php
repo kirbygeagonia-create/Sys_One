@@ -56,7 +56,7 @@ $stmt = $pdo->prepare("SELECT COUNT(*) FROM session_requests WHERE teacher_id = 
 $stmt->execute([$userId]);
 $pendingCount = (int)$stmt->fetchColumn();
 
-require_once __DIR__ . '/../includes/header.php';
+$pageTitle = 'Dashboard'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="flex justify-between items-center flex-wrap mb-16">
@@ -189,6 +189,7 @@ $recommendations = $stmt->fetchAll();
 
 <?php if (!empty($recommendations)): ?>
 <div class="card mt-24">
+    <div class="card-header">
         <h2><i class="fas fa-lightbulb"></i> Recommended Skills For You</h2>
         <a href="/pages/browse.php" class="btn btn-sm btn-outline">Browse All</a>
     </div>

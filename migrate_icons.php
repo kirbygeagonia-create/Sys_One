@@ -5,6 +5,11 @@
  * Usage: php migrate_icons.php
  */
 
+// Restrict to CLI
+if (php_sapi_name() !== 'cli') {
+    die('This file can only be run from the command line.');
+}
+
 $host = getenv('DB_HOST') ?: 'localhost';
 $user = getenv('DB_USER') ?: 'root';
 $pass = getenv('DB_PASS') ?: '';

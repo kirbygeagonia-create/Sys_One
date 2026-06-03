@@ -8,7 +8,7 @@ $categories = getCategories($pdo);
 $offeredSkills = getUserOfferedSkills($pdo, $userId);
 $wantedSkills = getUserWantedSkills($pdo, $userId);
 
-require_once __DIR__ . '/../includes/header.php';
+$pageTitle = 'My Skills'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <h1>My Skills</h1>
@@ -31,9 +31,13 @@ require_once __DIR__ . '/../includes/header.php';
                     <div class="skill-tag skill-tag-offer">
                         <i class="fas <?= h($skill['category_icon']) ?>"></i> <?= h($skill['skill_name']) ?>
                         <small>(<?= h($skill['proficiency']) ?>)</small>
-                        <a href="/actions/add_skill.php?type=offer&action=remove&skill_id=<?= $skill['skill_id'] ?>"
-                           onclick="return confirm('Remove this skill?')"
-                           class="ml-4 text-error font-bold no-underline-force">&times;</a>
+                        <form method="POST" action="/actions/add_skill.php" class="inline-form">
+                            <?= csrfField() ?>
+                            <input type="hidden" name="type" value="offer">
+                            <input type="hidden" name="action" value="remove">
+                            <input type="hidden" name="skill_id" value="<?= $skill['skill_id'] ?>">
+                            <button type="submit" onclick="return confirm('Remove this skill?')" class="btn-text-icon text-error font-bold no-underline">&times;</button>
+                        </form>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -55,9 +59,13 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php foreach ($wantedSkills as $skill): ?>
                     <div class="skill-tag skill-tag-want">
                         <i class="fas <?= h($skill['category_icon']) ?>"></i> <?= h($skill['skill_name']) ?>
-                        <a href="/actions/add_skill.php?type=want&action=remove&skill_id=<?= $skill['skill_id'] ?>"
-                           onclick="return confirm('Remove this skill?')"
-                           class="ml-4 text-error font-bold no-underline">&times;</a>
+                        <form method="POST" action="/actions/add_skill.php" class="inline-form">
+                            <?= csrfField() ?>
+                            <input type="hidden" name="type" value="want">
+                            <input type="hidden" name="action" value="remove">
+                            <input type="hidden" name="skill_id" value="<?= $skill['skill_id'] ?>">
+                            <button type="submit" onclick="return confirm('Remove this skill?')" class="btn-text-icon text-error font-bold no-underline">&times;</button>
+                        </form>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -142,38 +150,6 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 </div>
 
-<script>
-function loadSkills(categorySelectId, skillSelectId) {
-    var cat = document.getElementById(categorySelectId);
-    var skill = document.getElementById(skillSelectId);
-    var categoryId = cat.value;
-    if (!categoryId) {
-        skill.innerHTML = '<option value="">First select a category</option>';
-        skill.disabled = true;
-        return;
-    }
-    skill.disabled = true;
-    skill.innerHTML = '<option value="">Loading...</option>';
-    fetch('/actions/get_skills.php?category_id=' + categoryId)
-        .then(function(r) { return r.json(); })
-        .then(function(skills) {
-            skill.innerHTML = '<option value="">Select a skill</option>';
-            skills.forEach(function(s) {
-                var opt = document.createElement('option');
-                opt.value = s.id;
-                opt.textContent = s.name;
-                skill.appendChild(opt);
-            });
-            skill.disabled = false;
-        });
-}
-
-// Close modals when clicking overlay
-document.querySelectorAll('.modal-overlay').forEach(function(el) {
-    el.addEventListener('click', function(e) {
-        if (e.target === el) el.classList.remove('active');
-    });
-});
-</script>
+<!-- loadSkills() is defined globally in assets/js/script.js -->
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

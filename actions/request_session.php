@@ -43,33 +43,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please select a date and time.';
     } elseif (strtotime($scheduledDate) < time()) {
         $error = 'Session date must be in the future.';
-    } elseif ($user['credits'] < 1) {
-        $error = 'Not enough credits! Teach someone to earn more credits first.';
     } elseif (empty(trim($message))) {
         $error = 'Please include a message to the teacher.';
     } else {
-        $stmt = $pdo->prepare("INSERT INTO session_requests (requester_id, teacher_id, skill_id, message, status) VALUES (?, ?, ?, ?, 'pending')");
-        $stmt->execute([$userId, $teacherId, $skillId, $message]);
-        $requestId = $pdo->lastInsertId();
+        // Check for teacher schedule conflicts
+        $sessionEnd = date('Y-m-d H:i:s', strtotime($scheduledDate) + $duration * 60);
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) FROM sessions s
+            JOIN session_requests sr ON s.request_id = sr.id
+            WHERE sr.teacher_id = ?
+            AND s.status IN ('scheduled', 'completed')
+            AND s.scheduled_at < ?
+            AND DATE_ADD(s.scheduled_at, INTERVAL s.duration MINUTE) > ?
+        ");
+        $stmt->execute([$teacherId, $sessionEnd, $scheduledDate]);
+        if ((int)$stmt->fetchColumn() > 0) {
+            $error = 'The teacher has a scheduling conflict at that time. Please choose another time.';
+        }
 
-        $stmt = $pdo->prepare("INSERT INTO sessions (request_id, scheduled_at, duration) VALUES (?, ?, ?)");
-        $stmt->execute([$requestId, $scheduledDate, $duration]);
+        // Check learner's own schedule for conflicts
+        if (empty($error)) {
+            $stmt->execute([$userId, $sessionEnd, $scheduledDate]);
+            if ((int)$stmt->fetchColumn() > 0) {
+                $error = 'You already have a session scheduled during that time.';
+            }
+        }
+    }
 
-        // Notify teacher
-        $skillName = $skill['name'];
-        $user = getCurrentUser($pdo);
-        createNotification($pdo, $teacherId, 'session_request',
-            $user['name'] . ' wants to learn ' . $skillName . ' from you!',
-            '/pages/sessions.php'
-        );
+    if (empty($error)) {
+        // Reserve the credit in a transaction to prevent race condition
+        try {
+            $pdo->beginTransaction();
 
-        setFlash('success', 'Session request sent! Wait for ' . h($teacher['name']) . ' to respond.');
-        header('Location: /pages/sessions.php');
-        exit;
+            // Lock the user's row to prevent concurrent requests
+            $stmt = $pdo->prepare("SELECT credits FROM users WHERE id = ? FOR UPDATE");
+            $stmt->execute([$userId]);
+            $currentCredits = (int)$stmt->fetchColumn();
+
+            if ($currentCredits < 1) {
+                $pdo->rollBack();
+                $error = 'Not enough credits! Teach someone to earn more credits first.';
+            } else {
+                $stmt = $pdo->prepare("INSERT INTO session_requests (requester_id, teacher_id, skill_id, message, status) VALUES (?, ?, ?, ?, 'pending')");
+                $stmt->execute([$userId, $teacherId, $skillId, $message]);
+                $requestId = $pdo->lastInsertId();
+
+                $stmt = $pdo->prepare("INSERT INTO sessions (request_id, scheduled_at, duration) VALUES (?, ?, ?)");
+                $stmt->execute([$requestId, $scheduledDate, $duration]);
+
+                // Deduct credit immediately to reserve it
+                addCredits($pdo, $userId, 1, 'spend', $teacherId, 'session_request', $requestId, 'Reserved for session: ' . $skill['name']);
+
+                $pdo->commit();
+
+                // Notify teacher
+                $skillName = $skill['name'];
+                $user = getCurrentUser($pdo);
+                createNotification($pdo, $teacherId, 'session_request',
+                    $user['name'] . ' wants to learn ' . $skillName . ' from you!',
+                    '/pages/sessions.php'
+                );
+
+                setFlash('success', 'Session request sent! Wait for ' . h($teacher['name']) . ' to respond.');
+                header('Location: /pages/sessions.php');
+                exit;
+            }
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $error = 'An error occurred. Please try again.';
+        }
     }
 }
 
-require_once __DIR__ . '/../includes/header.php';
+$pageTitle = 'Request Session'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <h1>Request a Session</h1>

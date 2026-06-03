@@ -5,6 +5,11 @@
  * Or access via browser: http://localhost:8000/tests/test_suite.php
  */
 
+// Restrict to CLI to prevent public access to system internals
+if (php_sapi_name() !== 'cli') {
+    die('This file can only be run from the command line.');
+}
+
 $testsPassed = 0;
 $testsFailed = 0;
 $results = [];

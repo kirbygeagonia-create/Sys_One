@@ -7,7 +7,7 @@ $userId = $_SESSION['user_id'];
 $notifications = getAllNotifications($pdo, $userId);
 $unreadCount = getUnreadCount($pdo, $userId);
 
-require_once __DIR__ . '/../includes/header.php';
+$pageTitle = 'Notifications'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <h1>Notifications</h1>

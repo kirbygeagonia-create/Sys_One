@@ -3,10 +3,12 @@ require_once __DIR__ . '/functions.php';
 startSession();
 $currentUser = null;
 $unreadCount = 0;
+$unreadMsgCount = 0;
 if (isset($_SESSION['user_id'])) {
     require_once __DIR__ . '/../config/database.php';
     $currentUser = getCurrentUser($pdo);
     $unreadCount = getUnreadCount($pdo, $_SESSION['user_id']);
+    $unreadMsgCount = countUnreadMessages($pdo, $_SESSION['user_id']);
 }
 ?>
 <!DOCTYPE html>
@@ -14,10 +16,11 @@ if (isset($_SESSION['user_id'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkillLoop - Trade Skills, Earn Badges</title>
+    <title><?= isset($pageTitle) ? h($pageTitle) . ' - SkillLoop' : 'SkillLoop - Trade Skills, Earn Badges' ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='none' stroke='%23FF6B35' stroke-width='3'/><path d='M16 6v10l8 4' fill='none' stroke='%23FF6B35' stroke-width='2.5' stroke-linecap='round'/></svg>">
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
@@ -38,6 +41,14 @@ if (isset($_SESSION['user_id'])) {
                     <li>
                         <a href="/pages/credits.php" class="credits-badge">
                             <i class="fas fa-coins"></i> <?= (int)($currentUser['credits'] ?? 0) ?> credits
+                        </a>
+                    </li>
+                    <li class="notif-li">
+                        <a href="/pages/sessions.php" class="message-badge">
+                            <i class="fas fa-comment"></i>
+                            <?php if ($unreadMsgCount > 0): ?>
+                                <span class="message-count"><?= $unreadMsgCount ?></span>
+                            <?php endif; ?>
                         </a>
                     </li>
                     <li class="notif-li">

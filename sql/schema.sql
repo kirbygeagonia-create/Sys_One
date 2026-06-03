@@ -136,6 +136,42 @@ CREATE TABLE notifications (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Login attempt tracking for IP-based rate limiting
+CREATE TABLE login_attempts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ip_address VARCHAR(45) NOT NULL,
+    attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ip_time (ip_address, attempt_time)
+);
+
+-- In-app messaging for session participants
+CREATE TABLE messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    session_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    message TEXT NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_session (session_id, created_at),
+    INDEX idx_unread (session_id, is_read, sender_id)
+);
+
+-- Performance indexes for common queries
+CREATE INDEX idx_user_skills_offered_user ON user_skills_offered(user_id);
+CREATE INDEX idx_user_skills_offered_skill ON user_skills_offered(skill_id);
+CREATE INDEX idx_user_skills_wanted_user ON user_skills_wanted(user_id);
+CREATE INDEX idx_credit_transactions_user ON credit_transactions(user_id, type, created_at);
+CREATE INDEX idx_credit_transactions_ref ON credit_transactions(reference_type, reference_id);
+CREATE INDEX idx_session_requests_teacher ON session_requests(teacher_id, status);
+CREATE INDEX idx_session_requests_requester ON session_requests(requester_id, status);
+CREATE INDEX idx_sessions_request ON sessions(request_id);
+CREATE INDEX idx_sessions_status ON sessions(status, scheduled_at);
+CREATE INDEX idx_notifications_user_read ON notifications(user_id, is_read, created_at);
+CREATE INDEX idx_badges_recipient ON badges(recipient_id);
+CREATE INDEX idx_password_reset_token ON password_reset_tokens(token);
+
 -- Password reset tokens
 CREATE TABLE password_reset_tokens (
     id INT AUTO_INCREMENT PRIMARY KEY,

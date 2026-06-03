@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillLoop — Full System Evaluation</title>
+<style>
+  :root {
+    --primary: #FF6B35;
+    --dark: #1A2332;
+    --bg: #F8F6F3;
+    --card: #fff;
+    --border: #DED9D2;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --muted: #64748B;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--dark); line-height: 1.6; }
+  .header {
+    background: linear-gradient(135deg, #1A2332 0%, #2d3e55 100%);
+    color: #fff;
+    padding: 48px 40px 36px;
+    border-bottom: 4px solid var(--primary);
+  }
+  .header h1 { font-size: 2.2rem; margin-bottom: 8px; }
+  .header .meta { color: #94a3b8; font-size: 0.95rem; }
+  .header .tagline { color: #FF8C5A; font-weight: 600; font-size: 1.05rem; margin-top: 6px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 36px 40px; }
+  
+  /* Score Summary */
+  .score-bar {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    margin-bottom: 36px;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+  .total-score { text-align: center; }
+  .total-score .num { font-size: 4rem; font-weight: 800; color: var(--primary); line-height: 1; }
+  .total-score .denom { font-size: 1.5rem; color: var(--muted); }
+  .total-score .label { font-size: 0.85rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; flex: 1; min-width: 400px; }
+  .score-item { background: var(--bg); border-radius: 8px; padding: 14px 16px; border: 1px solid var(--border); }
+  .score-item .cat { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 4px; }
+  .score-item .val { font-size: 1.4rem; font-weight: 700; }
+  .score-item .bar { height: 6px; border-radius: 3px; background: var(--border); margin-top: 6px; overflow: hidden; }
+  .score-item .fill { height: 100%; border-radius: 3px; }
+  .green-text { color: var(--green); }
+  .yellow-text { color: var(--yellow); }
+  .red-text { color: var(--red); }
+  .fill-green { background: var(--green); }
+  .fill-yellow { background: var(--yellow); }
+  .fill-red { background: var(--red); }
+  .fill-blue { background: var(--blue); }
+  .fill-orange { background: var(--primary); }
+
+  /* Sections */
+  .section { margin-bottom: 40px; }
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--dark);
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title .icon { font-size: 1.1rem; }
+
+  /* Cards */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; }
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  
+  /* Issue Cards */
+  .issue { border-left: 4px solid; border-radius: 0 var(--radius) var(--radius) 0; padding: 14px 18px; margin-bottom: 12px; background: var(--card); border: 1px solid var(--border); border-left-width: 4px; }
+  .issue-critical { border-left-color: var(--red); }
+  .issue-warning { border-left-color: var(--yellow); }
+  .issue-info { border-left-color: var(--blue); }
+  .issue-positive { border-left-color: var(--green); }
+  .issue h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .issue p { font-size: 0.88rem; color: #475569; line-height: 1.5; }
+  .issue code { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 5px; font-size: 0.82rem; font-family: monospace; color: #c026d3; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  .badge-critical { background: #fee2e2; color: #dc2626; }
+  .badge-warning { background: #fef3c7; color: #d97706; }
+  .badge-info { background: #dbeafe; color: #2563eb; }
+  .badge-good { background: #dcfce7; color: #16a34a; }
+  .badge-fix { background: #f3e8ff; color: #7c3aed; }
+
+  /* Two-col layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  /* Highlight box */
+  .highlight { background: #fafafa; border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 16px; }
+  .highlight h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+
+  /* Code block */
+  pre { background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 14px 18px; font-size: 0.82rem; overflow-x: auto; margin-top: 8px; line-height: 1.5; }
+  pre .c { color: #94a3b8; }
+  pre .k { color: #f472b6; }
+  pre .s { color: #86efac; }
+  pre .fn { color: #67e8f9; }
+  pre .var { color: #fde68a; }
+  pre .fix { background: #16a34a33; border-left: 3px solid var(--green); padding-left: 6px; }
+  pre .bug { background: #ef444433; border-left: 3px solid var(--red); padding-left: 6px; }
+
+  /* Flow diagram */
+  .flow { display: flex; align-items: center; gap: 0; flex-wrap: wrap; margin: 12px 0; }
+  .flow-step { background: var(--bg); border: 2px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 0.85rem; font-weight: 600; text-align: center; }
+  .flow-arrow { font-size: 1.2rem; color: var(--primary); padding: 0 6px; }
+  .flow-step.ok { border-color: var(--green); color: var(--green); }
+  .flow-step.warn { border-color: var(--yellow); color: var(--yellow); }
+  .flow-step.bad { border-color: var(--red); color: var(--red); }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  th { text-align: left; padding: 10px 14px; background: var(--bg); border-bottom: 2px solid var(--border); font-weight: 700; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f9fafb; }
+
+  /* Summary verdict */
+  .verdict { background: linear-gradient(135deg, var(--dark) 0%, #2d3e55 100%); color: #fff; border-radius: var(--radius); padding: 28px 32px; margin-top: 20px; }
+  .verdict h2 { font-size: 1.3rem; margin-bottom: 12px; color: #FF8C5A; }
+  .verdict p { color: #cbd5e1; font-size: 0.93rem; line-height: 1.7; margin-bottom: 10px; }
+  .verdict ul { color: #cbd5e1; padding-left: 20px; font-size: 0.91rem; }
+  .verdict li { margin-bottom: 6px; line-height: 1.5; }
+
+  /* Priority Fix List */
+  .fix-list { counter-reset: fix; }
+  .fix-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .fix-item:last-child { border-bottom: none; }
+  .fix-num { counter-increment: fix; content: counter(fix); width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .fix-body h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 3px; }
+  .fix-body p { font-size: 0.83rem; color: var(--muted); }
+
+  @media (max-width: 768px) {
+    .container { padding: 20px; }
+    .card-grid, .two-col, .three-col, .score-grid { grid-template-columns: 1fr; }
+    .score-bar { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔍 SkillLoop — Full System Evaluation</h1>
+  <p class="tagline">Sys_One · github.com/kirbygeagonia-create/Sys_One</p>
+  <p class="meta">Evaluated: June 2026 &nbsp;·&nbsp; PHP 8.2 / MySQL 8 / Vanilla JS &nbsp;·&nbsp; ~1,800 lines of code across 30+ files</p>
+</div>
+
+<div class="container">
+
+  <!-- SCORE SUMMARY -->
+  <div class="score-bar">
+    <div class="total-score">
+      <div class="num">7.2</div>
+      <div class="denom">/10</div>
+      <div class="label">Overall Score</div>
+    </div>
+    <div class="score-grid">
+      <div class="score-item">
+        <div class="cat">Architecture</div>
+        <div class="val green-text">8.5</div>
+        <div class="bar"><div class="fill fill-green" style="width:85%"></div></div>
+      </div>
+      <div class="score-item">
+        <div class="cat">Security</div>
+        <div class="val yellow-text">6.5</div>
+        <div class="bar"><div class="fill fill-yellow" style="width:65%"></div></div>
+      </div>
+      <div class="score-item">
+        <div class="cat">Database Design</div>
+        <div class="val green-text">7.5</div>
+        <div class="bar"><div class="fill fill-green" style="width:75%"></div></div>
+      </div>
+      <div class="score-item">
+        <div class="cat">UI/UX</div>
+        <div class="val yellow-text">7.0</div>
+        <div class="bar"><div class="fill fill-yellow" style="width:70%"></div></div>
+      </div>
+      <div class="score-item">
+        <div class="cat">Frontend Code</div>
+        <div class="val yellow-text">6.8</div>
+        <div class="bar"><div class="fill fill-yellow" style="width:68%"></div></div>
+      </div>
+      <div class="score-item">
+        <div class="cat">Backend Code</div>
+        <div class="val orange-text green-text">8.0</div>
+        <div class="bar"><div class="fill fill-orange" style="width:80%"></div></div>
+      </div>
+      <div class="score-item">
+        <div class="cat">Business Logic</div>
+        <div class="val yellow-text">6.5</div>
+        <div class="bar"><div class="fill fill-yellow" style="width:65%"></div></div>
+      </div>
+      <div class="score-item">
+        <div class="cat">Testing</div>
+        <div class="val green-text">8.0</div>
+        <div class="bar"><div class="fill fill-green" style="width:80%"></div></div>
+      </div>
+      <div class="score-item">
+        <div class="cat">Code Quality</div>
+        <div class="val green-text">7.8</div>
+        <div class="bar"><div class="fill fill-green" style="width:78%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT IT IS -->
+  <div class="section">
+    <div class="section-title"><span class="icon">📋</span> System Overview</div>
+    <div class="card">
+      <p style="margin-bottom:12px"><strong>SkillLoop</strong> is a peer-to-peer skill-barter platform for a campus community (SEAIT). Students earn credits by teaching and spend credits by learning, with a dual-confirmation session lifecycle, badge issuance, and reputation tracking — all using a <em>zero-dependency</em> PHP + MySQL + vanilla JS stack.</p>
+      <div class="three-col" style="margin-top:16px">
+        <div class="highlight"><h3>✅ Confirmed Working</h3><ul style="padding-left:16px;font-size:0.88rem;color:#475569"><li>Auth + CSRF on all forms</li><li>Session lifecycle (request → complete)</li><li>Credit economy (earn/spend/bonus)</li><li>Notification system</li><li>AJAX skill loading</li><li>Password strength meter</li><li>Responsive layout</li><li>138-test automated suite</li></ul></div>
+        <div class="highlight"><h3>⚠️ Has Bugs</h3><ul style="padding-left:16px;font-size:0.88rem;color:#475569"><li>Browse: shows dupes per teacher</li><li>Back-to-top: no click handler</li><li>Dashboard recommendations: broken HTML</li><li>Hero: can't go full-width</li><li>CSS: duplicate padding declaration</li><li>Reset link: HTML escaped → not clickable</li></ul></div>
+        <div class="highlight"><h3>🔴 Missing Entirely</h3><ul style="padding-left:16px;font-size:0.88rem;color:#475569"><li>Email sending (dev-mode only)</li><li>Session regeneration on login</li><li>DB performance indexes</li><li>Page-specific &lt;title&gt; tags</li><li>Credit reservation on request</li><li>"Request Session" from profile page</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARCHITECTURE -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🏗️</span> Architecture & Project Structure <span class="badge badge-good" style="margin-left:8px">8.5/10</span></div>
+
+    <div class="two-col">
+      <div>
+        <div class="issue issue-positive">
+          <h4>✅ Clean Folder Separation</h4>
+          <p>auth/, pages/, actions/, includes/, config/ separation is well-done. <code>actions/</code> as the server-side API layer is a smart pattern that keeps pages declarative. No spaghetti mixing of logic and presentation.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ Correct Include Strategy</h4>
+          <p>Using <code>require_once __DIR__</code>-relative paths for all includes avoids path-resolution bugs. All pages start with <code>requireLogin()</code> before any DB work.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ Zero Dependencies — Smart Choice</h4>
+          <p>No Composer, no NPM, no framework. For a campus project, this is exactly correct. Load times are minimal and there's nothing to break from version drift.</p>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ Session Created at Request Time (Not Acceptance)</h4>
+          <p>When a learner requests a session, <code>request_session.php</code> inserts into BOTH <code>session_requests</code> AND <code>sessions</code> immediately. Only upon acceptance does the status change. This creates orphaned session rows for every declined request. Architecturally, sessions should only be created on acceptance.</p>
+        </div>
+      </div>
+      <div>
+        <div class="issue issue-warning">
+          <h4>⚠️ No .htaccess / Web Root Config</h4>
+          <p>No <code>.htaccess</code> is present. <code>tests/test_suite.php</code>, <code>install.php</code>, and <code>migrate_icons.php</code> are fully accessible at their URLs on any web server. These should be blocked from public access.</p>
+        </div>
+        <div class="issue issue-info">
+          <h4>ℹ️ Header.php Loads DB For Every Page</h4>
+          <p>Even static informational pages must connect to the database to render the nav bar (credit badge, unread count). Fine at this scale, but worth noting for future optimization.</p>
+        </div>
+        <div class="issue issue-info">
+          <h4>ℹ️ No Router — Direct File Serving</h4>
+          <p>The README explicitly says not to use <code>index.php</code> as a router. Direct file serving is fine for a campus tool but means no clean URLs and no centralized request dispatch layer.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECURITY -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🔐</span> Security <span class="badge badge-warning" style="margin-left:8px">6.5/10</span></div>
+
+    <div class="two-col">
+      <div>
+        <div class="issue issue-positive">
+          <h4>✅ CSRF Protection</h4>
+          <p>64-char hex token via <code>bin2hex(random_bytes(32))</code>, validated with constant-time <code>hash_equals()</code>. <code>csrfField()</code> helper is used consistently in all POST forms. Well-implemented.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ SQL Injection: PDO Prepared Statements</h4>
+          <p>All DB queries use PDO with bound parameters. <code>ATTR_EMULATE_PREPARES = false</code> forces real prepared statements. No raw string interpolation in SQL. Solid.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ XSS: h() helper applied consistently</h4>
+          <p>Every user-supplied value is run through <code>h()</code> (htmlspecialchars with ENT_QUOTES/UTF-8) before output. No unescaped user data found in any template.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ bcrypt Password Hashing</h4>
+          <p><code>password_hash($password, PASSWORD_DEFAULT)</code> with <code>password_verify()</code>. Correct, no salt management needed. Well-implemented.</p>
+        </div>
+      </div>
+      <div>
+        <div class="issue issue-critical">
+          <h4>🔴 No <code>session_regenerate_id()</code> on Login</h4>
+          <p><span class="badge badge-critical">Critical</span> After a successful login, the session ID is never regenerated. This leaves the app vulnerable to session fixation attacks — an attacker who obtains a pre-login session cookie can hijack the account. Fix: call <code>session_regenerate_id(true)</code> immediately after setting <code>$_SESSION['user_id']</code>.</p>
+          <pre><code class="fix">$_SESSION['user_id'] = $user['id'];
+<span class="fix">session_regenerate_id(true); // ADD THIS LINE</span></code></pre>
+        </div>
+        <div class="issue issue-critical">
+          <h4>🔴 File Upload Uses Client-Supplied MIME Type</h4>
+          <p><span class="badge badge-critical">Security</span> <code>upload_avatar.php</code> checks <code>$file['type']</code> — the browser-supplied MIME type — which can be spoofed. A PHP shell uploaded with a .jpg extension and a faked <code>image/jpeg</code> type would pass the check. Use <code>finfo_file()</code> to read the actual file magic bytes.</p>
+          <pre><code class="bug">// CURRENT (unsafe):
+if (!in_array($file['type'], $allowedTypes)) {</code>
+<code class="fix">// FIX:
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+$actualType = finfo_file($finfo, $file['tmp_name']);
+if (!in_array($actualType, $allowedTypes)) {</code></pre>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ Skill Removal Uses GET (CSRF Bypass)</h4>
+          <p>Removing a skill uses a GET link: <code>/actions/add_skill.php?type=offer&action=remove&skill_id=X</code>. <code>requireCsrf()</code> skips GET requests by design, so anyone who tricks a logged-in user into clicking a crafted link can silently remove all their skills. Mutating state should use POST only.</p>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ Login Rate-Limiting Uses Session (Bypassable)</h4>
+          <p>Lockout counters are stored in <code>$_SESSION</code>. An attacker can simply discard their session cookie to reset the counter, enabling unlimited brute-force attempts. Rate-limiting should be IP-based, stored in the database or Redis.</p>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ DB Error Message Exposed in Production</h4>
+          <p><code>config/database.php</code> calls <code>die("Connection failed: " . $e->getMessage())</code>, which would expose database credentials and host info to any visitor if the DB goes down. Log errors privately; show a generic message to users.</p>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ <code>proficiency</code> Field Not Whitelisted</h4>
+          <p><code>add_skill.php</code> inserts <code>$_POST['proficiency']</code> directly. MySQL's ENUM will reject invalid values, but PHP should validate explicitly with <code>in_array($proficiency, ['beginner','intermediate','advanced','expert'])</code> before hitting the DB.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATABASE -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🗄️</span> Database Design <span class="badge badge-good" style="margin-left:8px">7.5/10</span></div>
+    <div class="two-col">
+      <div>
+        <div class="issue issue-positive">
+          <h4>✅ Schema is Well-Normalized</h4>
+          <p>14 tables with clear FKs and <code>ON DELETE CASCADE</code>. Separate tables for skill categories, skills, and user skill offers/wants avoid denormalization. The audit log table (<code>credit_transactions</code>) is a great design decision.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ Unique Constraints Prevent Duplicates</h4>
+          <p><code>UNIQUE KEY unique_offer (user_id, skill_id)</code> and <code>unique_want</code> prevent double-entries at the DB level, backed up by PHP-side duplicate checks.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ Dual-Confirmation Design</h4>
+          <p><code>sessions.requester_confirmed</code> + <code>teacher_confirmed</code> columns are clean and efficient for tracking the two-step completion flow.</p>
+        </div>
+        <div class="issue issue-critical">
+          <h4>🔴 Zero Performance Indexes</h4>
+          <p><span class="badge badge-critical">Performance</span> Beyond PKs, FKs, and unique constraints, <strong>no additional indexes are defined</strong>. Columns that are constantly queried — <code>sessions.status</code>, <code>session_requests.teacher_id</code>, <code>notifications.user_id + is_read</code>, <code>users.email</code> — all require table scans. Add:</p>
+          <pre>ALTER TABLE session_requests ADD INDEX idx_teacher (teacher_id);
+ALTER TABLE session_requests ADD INDEX idx_requester (requester_id);
+ALTER TABLE sessions ADD INDEX idx_status (status);
+ALTER TABLE notifications ADD INDEX idx_user_read (user_id, is_read);
+ALTER TABLE users ADD INDEX idx_email (email);</pre>
+        </div>
+      </div>
+      <div>
+        <div class="issue issue-warning">
+          <h4>⚠️ <code>reputation</code> Column: No DB-Level Constraint</h4>
+          <p>The <code>users.reputation</code> column is <code>DECIMAL(2,1)</code> which caps at 9.9. Since max rating is 5 stars this is fine numerically, but there's no CHECK constraint to enforce the 0–5 range at the DB level. A <code>CHECK (reputation BETWEEN 0.0 AND 5.0)</code> would add correctness assurance.</p>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ No Input Length Validation for DB Fields</h4>
+          <p>Name is <code>VARCHAR(100)</code>, email is <code>VARCHAR(255)</code>, bio is <code>TEXT</code>, etc. PHP registration validates password complexity but not max lengths for name, bio, location, or availability. PDO will truncate silently or error depending on MySQL mode.</p>
+        </div>
+        <div class="issue issue-info">
+          <h4>ℹ️ Denormalized Reputation Column</h4>
+          <p><code>users.reputation</code> duplicates data derivable from <code>session_reviews</code>. The <code>updateReputation()</code> function keeps them in sync, but if it ever fails silently, the values diverge. A view or computed column would be more robust — though the current approach is a valid optimization.</p>
+        </div>
+        <div class="issue issue-info">
+          <h4>ℹ️ Sessions Created Before Acceptance</h4>
+          <p>A <code>sessions</code> row is inserted at request time with <code>status='scheduled'</code> (before the teacher accepts). Only on acceptance does it properly become "scheduled". Orphaned rows in <code>sessions</code> for declined requests pollute the table.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BACKEND CODE -->
+  <div class="section">
+    <div class="section-title"><span class="icon">⚙️</span> Backend / PHP Code Quality <span class="badge badge-good" style="margin-left:8px">8.0/10</span></div>
+    <div class="two-col">
+      <div>
+        <div class="issue issue-positive">
+          <h4>✅ functions.php is Well-Organized</h4>
+          <p>25+ helper functions cleanly divided: auth, credits, skills, notifications, CSRF, flash messages. The <code>addCredits()</code> function correctly uses DB transactions with rollback.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ Flash Messages and CSRF Work Correctly</h4>
+          <p>Flash messages survive redirect-after-POST correctly. CSRF token stored in session, generated lazily, validated with <code>hash_equals()</code> — all correct.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ All Actions Verify Ownership</h4>
+          <p>Every action that mutates data checks ownership: <code>complete_session.php</code>, <code>cancel_session.php</code>, <code>respond_request.php</code> all verify <code>$userId</code> is a participant before executing.</p>
+        </div>
+        <div class="issue issue-critical">
+          <h4>🔴 Credit Logic Bug: No Credit Reservation</h4>
+          <p><span class="badge badge-critical">Logic Bug</span> Credits are checked at request time (<code>$user['credits'] &lt; 1</code>) but NOT deducted until session completion. A user with 1 credit can submit 5 simultaneous session requests. When all complete, their balance would go to <code>-4</code>. There's no floor protection in <code>addCredits()</code>.</p>
+          <pre><code class="bug">// request_session.php — checks but doesn't reserve:
+} elseif ($user['credits'] < 1) {
+    $error = 'Not enough credits!';
+</code>
+<code class="fix">// FIX: Use DB transaction with FOR UPDATE to reserve
+BEGIN;
+SELECT credits FROM users WHERE id = ? FOR UPDATE;
+-- verify >= 1, then proceed
+-- decrement on request, refund on cancel/decline</code></pre>
+        </div>
+      </div>
+      <div>
+        <div class="issue issue-warning">
+          <h4>⚠️ Inline SQL in credits.php View</h4>
+          <p>The credits page has three raw SQL queries executed inside PHP echo statements within the template. These belong in <code>functions.php</code> as <code>getTotalEarned()</code>, <code>getTotalSpent()</code>, etc. Mixing data retrieval with presentation violates MVC separation.</p>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ Dev-Mode Password Reset Link Broken</h4>
+          <p>In <code>forgot_password.php</code>, a dev-mode clickable link is embedded in the flash message. But <code>displayFlashes()</code> applies <code>h()</code> (HTML escaping) to all flash content, so the <code>&lt;a href="..."&gt;</code> renders as raw text, not a clickable link. The link is permanently broken.</p>
+          <pre><code class="bug">// displayFlashes() always escapes:
+$output .= '...' . h($f['message']) . '...';</code>
+<code class="fix">// FIX option: Use a 'raw' flash type for safe HTML content
+// Or display $resetLink in a separate non-escaped UI element</code></pre>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ Profile Page Missing "Request Session" CTA</h4>
+          <p>When a logged-in user views someone else's profile page, there is <strong>no button to request a session</strong>. Users must navigate back to Browse to do so. A "Request a Session" button linking to <code>/actions/request_session.php?teacher_id=X</code> should be visible on the profile.</p>
+        </div>
+        <div class="issue issue-info">
+          <h4>ℹ️ No Pagination on Sessions Page</h4>
+          <p><code>pages/sessions.php</code> loads all sessions for a user with no LIMIT. A power user with 200+ sessions will cause a slow query and render a very long table. Add pagination (20–50 per page).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FRONTEND & UI -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🎨</span> Frontend: CSS, JS, UI/UX <span class="badge badge-warning" style="margin-left:8px">6.8/10</span></div>
+    <div class="two-col">
+      <div>
+        <div class="issue issue-positive">
+          <h4>✅ CSS Custom Properties & Design System</h4>
+          <p>All colors, shadows, and radii are defined as CSS variables in <code>:root</code>. The SEAIT orange palette is consistent. No inline styles anywhere (enforced by test).</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ Responsive Design with Proper Breakpoints</h4>
+          <p>Three breakpoints (1024px, 768px, 480px) cover tablet and mobile. The hamburger nav collapses correctly. Stats grid, forms, and cards all reflow cleanly on small screens.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ Animations are Appropriate and Subtle</h4>
+          <p>slideDown for alerts, scaleIn for modals, fadeIn for overlay, spin for loader, slideIn for toasts — all are short (0.2–0.3s) and purposeful. Not overdone.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ Utility Class System is Practical</h4>
+          <p>The utility classes (flex, gap, text, margin utilities) mirror Tailwind patterns and reduce repetition. Works well without a framework dependency.</p>
+        </div>
+        <div class="issue issue-critical">
+          <h4>🔴 Back-to-Top Button: No Click Handler</h4>
+          <p><span class="badge badge-critical">Bug</span> The button is created and shown on scroll in <code>script.js</code>, but <strong>no click event is attached</strong>. The button appears but clicking it does nothing. The scroll-to-top logic is completely missing.</p>
+          <pre><code class="bug">// CURRENT — shows button, no click handler:
+btn.classList.toggle('visible', window.scrollY > 400);</code>
+<code class="fix">// FIX — add before the closing })():
+btn.addEventListener('click', function() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});</code></pre>
+        </div>
+      </div>
+      <div>
+        <div class="issue issue-critical">
+          <h4>🔴 Dashboard: Broken HTML in Recommendations Card</h4>
+          <p><span class="badge badge-critical">HTML Bug</span> The recommendations section closes the card <code>&lt;div&gt;</code> immediately after the heading, then renders the skill tags <em>outside</em> the card. There's also an unmatched <code>&lt;/div&gt;</code>.</p>
+          <pre><code class="bug">&lt;div class="card mt-24"&gt;
+  &lt;h2&gt;...Recommended Skills...&lt;/h2&gt;
+  &lt;a&gt;Browse All&lt;/a&gt;
+&lt;/div&gt;  &lt;!-- card closed HERE, tags outside! --&gt;
+&lt;div class="flex flex-wrap gap-8"&gt;
+  &lt;!-- skill tags are outside the card --&gt;
+&lt;/div&gt;
+&lt;/div&gt;  &lt;!-- UNMATCHED closing div --&gt;</code>
+<code class="fix">&lt;div class="card mt-24"&gt;
+  &lt;div class="card-header"&gt;
+    &lt;h2&gt;...Recommended Skills...&lt;/h2&gt;
+    &lt;a&gt;Browse All&lt;/a&gt;
+  &lt;/div&gt;
+  &lt;div class="flex flex-wrap gap-8"&gt;
+    &lt;!-- skill tags INSIDE the card --&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+        </div>
+        <div class="issue issue-critical">
+          <h4>🔴 Hero Section: Duplicate CSS + Can't Go Full-Width</h4>
+          <p><span class="badge badge-critical">CSS Bug</span> The <code>.hero</code> rule has <strong>two <code>padding</code> declarations</strong> (80px then 100px — second overrides first). Redundant code. Worse: the hero is rendered inside <code>&lt;main class="container"&gt;</code>, so <code>margin: -20px -20px 0</code> cannot break out of the 1100px max-width. The hero will never be truly full-width.</p>
+          <pre><code class="bug">.hero {
+  padding: 80px 20px;  /* OVERRIDDEN — dead code */
+  margin: -20px -20px 0;  /* can't escape max-width container */
+  padding: 100px 20px;  /* this wins */
+}</code></pre>
+          <p style="margin-top:8px">Fix: Move <code>&lt;section class="hero"&gt;</code> outside of <code>&lt;main class="container"&gt;</code> in header/footer structure, and remove the duplicate padding.</p>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ Browse Page: Multiple Cards Per Teacher</h4>
+          <p>The browse query uses <code>SELECT DISTINCT u.id</code> but with non-aggregated skill columns. MySQL's DISTINCT applies to the <em>entire row</em>, not just <code>u.id</code>. A teacher offering 3 skills appears <strong>as 3 separate cards</strong>. The count query correctly counts distinct users, but the display shows more results than expected.</p>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ loadSkills() Function Defined Twice</h4>
+          <p><code>pages/skills.php</code> defines its own local <code>loadSkills()</code> function inside a <code>&lt;script&gt;</code> block, which duplicates the one already in <code>assets/js/script.js</code>. This causes a function redeclaration (silently overrides in most browsers). Remove the duplicate from skills.php and rely on script.js.</p>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ All Pages Share One Generic &lt;title&gt;</h4>
+          <p>Every page renders "SkillLoop - Trade Skills, Earn Badges" as the browser tab title regardless of the page. Dashboard should say "Dashboard – SkillLoop", Browse should say "Find Teachers – SkillLoop", etc. Page titles affect SEO and browser history readability. The header.php title needs to be dynamic per page.</p>
+        </div>
+        <div class="issue issue-info">
+          <h4>ℹ️ No &lt;link rel="icon"&gt; / Favicon</h4>
+          <p>No favicon is declared. Browsers make a 404 request to <code>/favicon.ico</code> on every page load. Even a simple one-liner in <code>header.php</code> would fix this: <code>&lt;link rel="icon" href="data:..."&gt;</code> or a real favicon file.</p>
+        </div>
+        <div class="issue issue-info">
+          <h4>ℹ️ CSS class name inconsistency: <code>no-underline</code> vs <code>no-underline-force</code></h4>
+          <p>In skills.php, one skill removal link uses <code>no-underline-force</code> (line 36) and the other uses <code>no-underline</code> (line 59). Inconsistent — both should use the same class.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUSINESS LOGIC & FLOWS -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🔄</span> Business Logic & Data Flows <span class="badge badge-warning" style="margin-left:8px">6.5/10</span></div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3 style="margin-bottom:12px;font-size:0.95rem;font-weight:700">Session Lifecycle Flow</h3>
+      <div class="flow">
+        <div class="flow-step ok">Learner Requests</div><div class="flow-arrow">→</div>
+        <div class="flow-step warn">Session Created* <br><small>⚠ premature</small></div><div class="flow-arrow">→</div>
+        <div class="flow-step ok">Teacher Accepts/Declines</div><div class="flow-arrow">→</div>
+        <div class="flow-step ok">Both Confirm Complete</div><div class="flow-arrow">→</div>
+        <div class="flow-step warn">Credits Transfer <br><small>⚠ no reservation</small></div><div class="flow-arrow">→</div>
+        <div class="flow-step ok">Review + Badge</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="issue issue-positive">
+          <h4>✅ Dual-Confirmation is Correct and Fair</h4>
+          <p>Both parties must independently mark a session complete before credits transfer. This prevents one party unilaterally claiming credits. The "waiting for other party" UX is handled cleanly.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ Credit Audit Log is Complete</h4>
+          <p>Every credit movement (earn, spend, bonus) is logged to <code>credit_transactions</code> with counterparty, reference type, and description. Full traceability.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ Badge Issuance is Teacher-Only and Correct</h4>
+          <p>Only the teacher can issue a badge to the learner, and only once per completed session (unique constraint). The badge level is teacher-selected — appropriate for a credential system.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ Notification Coverage is Comprehensive</h4>
+          <p>All major lifecycle events trigger notifications: request sent, accepted, declined, completed, cancelled, badge earned. Notifications include contextual links to the relevant pages.</p>
+        </div>
+      </div>
+      <div>
+        <div class="issue issue-critical">
+          <h4>🔴 Credit Race Condition: Over-Requesting</h4>
+          <p><span class="badge badge-critical">Logic Bug</span> A user with 1 credit can submit N simultaneous session requests (all pass the <code>credits &lt; 1</code> check). When N sessions complete, the credit balance goes to <code>1 - N</code> (negative). There's no locking or reservation mechanism. This can produce negative balances.</p>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ No Way to Message After Acceptance</h4>
+          <p>Once a session is accepted, there's no in-app way for teacher and learner to communicate (clarify location, meeting link, etc.). The only "message" is the initial request text. For a campus app, even a simple notes field would help.</p>
+        </div>
+        <div class="issue issue-warning">
+          <h4>⚠️ No Session Scheduling Conflict Detection</h4>
+          <p>A teacher can accept multiple session requests for the exact same date and time. There's no availability checking or conflict detection. Teachers could be double-booked.</p>
+        </div>
+        <div class="issue issue-info">
+          <h4>ℹ️ Browse Shows Learner Can't Offer Skills They Want</h4>
+          <p>The skills recommendation system on the dashboard is a nice touch — it shows skills in categories the user already engages with. However, there's no matching system that finds people who want to learn what the current user offers (the best "match-making" feature).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="section">
+    <div class="section-title"><span class="icon">⭐</span> Features & Functionality Checklist</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Feature</th><th>Status</th><th>Quality</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>User Registration / Login</td><td><span class="badge badge-good">✅ Working</span></td><td>8/10</td><td>Missing session_regenerate_id on login</td></tr>
+          <tr><td>Password Reset Flow</td><td><span class="badge badge-warning">⚠️ Partial</span></td><td>5/10</td><td>Token generated but email NOT sent; dev-mode link broken by h()</td></tr>
+          <tr><td>Skill Management (Offer/Want)</td><td><span class="badge badge-good">✅ Working</span></td><td>8/10</td><td>loadSkills() duplicated; GET removal is CSRF-bypassed</td></tr>
+          <tr><td>Browse Teachers</td><td><span class="badge badge-warning">⚠️ Buggy</span></td><td>5/10</td><td>Shows duplicate cards per teacher; count vs results mismatch</td></tr>
+          <tr><td>Session Request Flow</td><td><span class="badge badge-good">✅ Working</span></td><td>7/10</td><td>Credits not reserved at request time (race condition)</td></tr>
+          <tr><td>Session Acceptance/Decline</td><td><span class="badge badge-good">✅ Working</span></td><td>8/10</td><td>Correct ownership checks; notifications fire correctly</td></tr>
+          <tr><td>Dual-Confirmation Completion</td><td><span class="badge badge-good">✅ Working</span></td><td>9/10</td><td>Best feature — well-implemented</td></tr>
+          <tr><td>Rating & Review System</td><td><span class="badge badge-good">✅ Working</span></td><td>8/10</td><td>Star UI interactive and correct; reputation update works</td></tr>
+          <tr><td>Badge Issuance</td><td><span class="badge badge-good">✅ Working</span></td><td>8/10</td><td>Teacher-only, unique per session, visual display good</td></tr>
+          <tr><td>Credit Economy</td><td><span class="badge badge-warning">⚠️ Partial</span></td><td>6/10</td><td>Credit reservation bug; no negative balance floor</td></tr>
+          <tr><td>Notification System</td><td><span class="badge badge-good">✅ Working</span></td><td>8/10</td><td>Read/unread tracking, bell count, mark all read — solid</td></tr>
+          <tr><td>User Profile</td><td><span class="badge badge-good">✅ Working</span></td><td>7/10</td><td>Missing "Request Session" CTA for visitors</td></tr>
+          <tr><td>Avatar Upload</td><td><span class="badge badge-warning">⚠️ Partial</span></td><td>6/10</td><td>Uses client-supplied MIME type (spoofable)</td></tr>
+          <tr><td>Credit Transaction History</td><td><span class="badge badge-good">✅ Working</span></td><td>7/10</td><td>Inline SQL in view; no pagination beyond 20 records</td></tr>
+          <tr><td>Skill Recommendations (Dashboard)</td><td><span class="badge badge-warning">⚠️ Buggy</span></td><td>5/10</td><td>Broken HTML structure — tags render outside the card</td></tr>
+          <tr><td>Session Cancellation</td><td><span class="badge badge-good">✅ Working</span></td><td>8/10</td><td>Notifies other party; correct auth check</td></tr>
+          <tr><td>Back-to-Top Button</td><td><span class="badge badge-critical">🔴 Broken</span></td><td>1/10</td><td>Visible but has no click handler — does nothing</td></tr>
+          <tr><td>Mobile Navigation</td><td><span class="badge badge-good">✅ Working</span></td><td>8/10</td><td>Toggle works; closes on link click; no outside-click close</td></tr>
+          <tr><td>Password Strength Meter</td><td><span class="badge badge-good">✅ Working</span></td><td>8/10</td><td>Consistent between modal and register page</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TESTING -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🧪</span> Testing <span class="badge badge-good" style="margin-left:8px">8.0/10</span></div>
+    <div class="two-col">
+      <div>
+        <div class="issue issue-positive">
+          <h4>✅ 138 Unit Tests Cover Core Concerns Well</h4>
+          <p>Tests cover PHP environment, file structure, syntax validation, schema tables, all 25+ helper functions, CSRF tokens, flash messages, HTML escaping, CSS completeness, and JS function presence. The zero-tolerance enforcement of no inline CSS and no emojis is excellent.</p>
+        </div>
+        <div class="issue issue-positive">
+          <h4>✅ E2E Flow Test Suite (33 tests)</h4>
+          <p>The end-to-end tests cover the full session lifecycle: registration, skill management, request → accept → complete → review, badge issuance, notification tracking, and edge cases (duplicate email, CSRF validation). Good coverage of the happy path.</p>
+        </div>
+      </div>
+      <div>
+        <div class="issue issue-warning">
+          <h4>⚠️ Tests Are Publicly Accessible</h4>
+          <p><code>/tests/test_suite.php</code> and <code>/tests/e2e_flow.php</code> have no authentication guard. On a live server, they expose your system internals to anyone who visits the URL. Add a check to restrict to CLI-only, or add an <code>.htaccess</code> deny rule for the tests/ directory.</p>
+        </div>
+        <div class="issue issue-info">
+          <h4>ℹ️ Tests Don't Cover the Browse Dupe Bug</h4>
+          <p>The browse page SQL bug (multiple cards per teacher) is not covered by any test. The test suite tests function existence and syntax but not behavioral correctness of query results. Integration tests hitting the actual queries would catch this.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIORITY FIXES -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🛠️</span> Top 10 Priority Fixes (Ordered by Impact)</div>
+    <div class="card">
+      <div class="fix-list">
+        <div class="fix-item"><div class="fix-num">1</div><div class="fix-body"><h4>🔴 Add <code>session_regenerate_id(true)</code> on successful login</h4><p>1-line fix, prevents session fixation. File: <code>auth/login.php</code> — add immediately after setting $_SESSION['user_id'].</p></div></div>
+        <div class="fix-item"><div class="fix-num">2</div><div class="fix-body"><h4>🔴 Fix credit race condition — reserve credit at request time</h4><p>Use a DB transaction with <code>SELECT ... FOR UPDATE</code> when requesting a session to reserve the credit, preventing negative balances from concurrent requests. File: <code>actions/request_session.php</code></p></div></div>
+        <div class="fix-item"><div class="fix-num">3</div><div class="fix-body"><h4>🔴 Fix browse page query — one card per teacher</h4><p>Aggregate offered skills per teacher using <code>GROUP_CONCAT</code> or a subquery. File: <code>pages/browse.php</code> — redesign the main SELECT to use GROUP BY u.id.</p></div></div>
+        <div class="fix-item"><div class="fix-num">4</div><div class="fix-body"><h4>🔴 Fix back-to-top button — add click event listener</h4><p>3-line fix. File: <code>assets/js/script.js</code> — add <code>btn.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}))</code>.</p></div></div>
+        <div class="fix-item"><div class="fix-num">5</div><div class="fix-body"><h4>🔴 Fix dashboard recommendations HTML structure</h4><p>Wrap heading and Browse link in <code>&lt;div class="card-header"&gt;</code> and move the skill tags INSIDE the card div. File: <code>pages/dashboard.php</code> (lines 191–204).</p></div></div>
+        <div class="fix-item"><div class="fix-num">6</div><div class="fix-body"><h4>⚠️ Use <code>finfo_file()</code> for MIME type verification on avatar upload</h4><p>Prevents MIME spoofing. File: <code>actions/upload_avatar.php</code> — replace <code>$file['type']</code> check with <code>finfo_file()</code>.</p></div></div>
+        <div class="fix-item"><div class="fix-num">7</div><div class="fix-body"><h4>⚠️ Add performance indexes to the database</h4><p>Five ALTER TABLE statements covering commonly queried columns. File: <code>sql/schema.sql</code> — add indexes for teacher_id, requester_id, status, user_id+is_read, email.</p></div></div>
+        <div class="fix-item"><div class="fix-num">8</div><div class="fix-body"><h4>⚠️ Convert skill removal from GET to POST</h4><p>Mutating state via GET links is a CSRF risk. File: <code>pages/skills.php</code> + <code>actions/add_skill.php</code> — use POST forms for deletion like the rest of the app does.</p></div></div>
+        <div class="fix-item"><div class="fix-num">9</div><div class="fix-body"><h4>⚠️ Add per-page &lt;title&gt; tags</h4><p>Pass a <code>$pageTitle</code> variable to <code>header.php</code> and use it as <code>&lt;title&gt;<?= $pageTitle ?&gt; – SkillLoop&lt;/title&gt;</code>. All pages need unique titles.</p></div></div>
+        <div class="fix-item"><div class="fix-num">10</div><div class="fix-body"><h4>⚠️ Add "Request Session" button to profile page</h4><p>Visitors viewing a teacher's profile should see a direct CTA. File: <code>pages/profile.php</code> — add button in the profile-info section for non-owner viewers.</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT'S GENUINELY IMPRESSIVE -->
+  <div class="section">
+    <div class="section-title"><span class="icon">🏆</span> What the Team Got Right</div>
+    <div class="three-col">
+      <div class="card">
+        <h3 style="font-size:0.95rem;margin-bottom:8px">🛡️ Security Foundation</h3>
+        <p style="font-size:0.87rem;color:#475569">CSRF, XSS escaping, bcrypt, prepared statements, and rate-limited login are all implemented correctly. Most student projects skip most of these. The team clearly understands web security fundamentals.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:0.95rem;margin-bottom:8px">⚙️ Dual-Confirmation Sessions</h3>
+        <p style="font-size:0.87rem;color:#475569">The two-sided confirmation system is a genuinely clever solution to the "who completed it" dispute problem. The implementation in <code>complete_session.php</code> with DB-level tracking is clean and correct.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:0.95rem;margin-bottom:8px">📊 Credit Audit Log</h3>
+        <p style="font-size:0.87rem;color:#475569">Every single credit movement is logged with counterparty, reference, and description. The full audit trail in <code>credit_transactions</code> shows professional-level thinking about financial data integrity.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:0.95rem;margin-bottom:8px">🧪 Test Coverage</h3>
+        <p style="font-size:0.87rem;color:#475569">138 automated tests plus 33 E2E tests is excellent for a student project. The no-inline-CSS and no-emoji enforcement via tests shows creative use of automated quality gates.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:0.95rem;margin-bottom:8px">🎨 Design Consistency</h3>
+        <p style="font-size:0.87rem;color:#475569">CSS custom properties, Font Awesome icons everywhere, Poppins throughout, consistent card/button/badge components — the visual language is coherent. Zero inline styles is a real discipline to maintain.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-size:0.95rem;margin-bottom:8px">📐 Clean Code Organization</h3>
+        <p style="font-size:0.87rem;color:#475569">The helper function library in <code>functions.php</code>, the clear folder separation, the consistent include pattern, and the docblock comments make this very readable for a collaborative team project.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL VERDICT -->
+  <div class="verdict">
+    <h2>📋 Final Verdict: 7.2 / 10</h2>
+    <p><strong>SkillLoop is a genuinely solid student systems project.</strong> The core concept is well-executed, the architecture is clean, the security foundations are strong, and the test suite shows real engineering discipline. For a campus peer-to-peer platform, this is production-quality in many areas.</p>
+    <p>The score is held back by a cluster of fixable bugs — most critically: the browse page showing duplicate teacher cards, the back-to-top button that does nothing, the broken HTML in the recommendations card, and the credit reservation race condition that allows negative balances. Several are one-line or five-line fixes. None represent deep architectural flaws.</p>
+    <p>The security posture is above average for a student project — CSRF, XSS, and SQL injection are all properly defended. The two remaining gaps (session fixation and MIME spoofing on uploads) are important to fix before any production deployment.</p>
+    <ul>
+      <li><strong>Fix the 5 critical bugs above</strong> and the score rises to ~8.5/10 immediately.</li>
+      <li><strong>Add the performance indexes</strong> and the system will scale well beyond a classroom environment.</li>
+      <li><strong>Implement real email sending</strong> for password resets to make the auth system complete.</li>
+      <li><strong>Fix the browse query</strong> (one card per teacher with skill aggregation) — this is the most user-visible UX issue currently in the system.</li>
+    </ul>
+    <p style="margin-top:10px;color:#94a3b8;font-size:0.85rem">Overall: Great foundation. Real bugs, fixable bugs. The team shows strong understanding of web application architecture, security, and database design. Clean it up and this is a deployable product.</p>
+  </div>
+
+</div>
+</body>
+</html>
