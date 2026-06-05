@@ -34,10 +34,10 @@ if (isset($_SESSION['user_id'])) {
             <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation"><i class="fas fa-bars"></i></button>
             <ul class="nav-links" id="navLinks">
                 <?php if ($currentUser): ?>
-                    <li><a href="/pages/dashboard.php">Dashboard</a></li>
-                    <li><a href="/pages/browse.php">Browse</a></li>
-                    <li><a href="/pages/skills.php">My Skills</a></li>
-                    <li><a href="/pages/sessions.php">Sessions</a></li>
+                    <li><a href="/pages/dashboard.php" class="<?= isActive('/pages/dashboard.php') ?>">Dashboard</a></li>
+                    <li><a href="/pages/browse.php" class="<?= isActive('/pages/browse.php') ?>">Browse</a></li>
+                    <li><a href="/pages/skills.php" class="<?= isActive('/pages/skills.php') ?>">My Skills</a></li>
+                    <li><a href="/pages/sessions.php" class="<?= isActive('/pages/sessions.php') ?>">Sessions</a></li>
                     <li>
                         <a href="/pages/credits.php" class="credits-badge">
                             <i class="fas fa-coins"></i> <?= (int)($currentUser['credits'] ?? 0) ?> credits
@@ -64,7 +64,12 @@ if (isset($_SESSION['user_id'])) {
                             <i class="fas fa-user"></i> <?= h($currentUser['name']) ?>
                         </a>
                     </li>
-                    <li><a href="/auth/logout.php" class="btn btn-sm btn-outline">Logout</a></li>
+                    <li>
+                            <form method="POST" action="/auth/logout.php" class="inline">
+                                <?= csrfField() ?>
+                                <button type="submit" class="btn btn-sm btn-outline">Logout</button>
+                            </form>
+                        </li>
                 <?php else: ?>
                     <li><a href="/index.php">Home</a></li>
                     <li><a href="/pages/browse.php">Browse</a></li>

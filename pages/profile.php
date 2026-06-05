@@ -47,10 +47,16 @@ if ($isOwner && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_pr
     $location = trim($_POST['location'] ?? '');
 
     if ($name) {
+        $avail = trim($_POST['availability'] ?? '');
         if (strlen($name) > 100) {
             setFlash('error', 'Name must be 100 characters or fewer.');
+        } elseif (strlen($bio) > 1000) {
+            setFlash('error', 'Bio must be 1000 characters or fewer.');
+        } elseif (strlen($location) > 100) {
+            setFlash('error', 'Location must be 100 characters or fewer.');
+        } elseif (strlen($avail) > 500) {
+            setFlash('error', 'Availability must be 500 characters or fewer.');
         } else {
-            $avail = trim($_POST['availability'] ?? '');
             $stmt = $pdo->prepare("UPDATE users SET name = ?, bio = ?, location = ?, availability = ? WHERE id = ?");
             $stmt->execute([$name, $bio, $location, $avail, $profileId]);
             $profile = getUserById($pdo, $profileId);
@@ -61,7 +67,7 @@ if ($isOwner && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_pr
 ?>
 
 <div class="profile-header">
-    <div class="profile-avatar">
+    <div class="profile-avatar"<?php if (!$profile['avatar']): ?> style="background: <?= nameToColor($profile['name']) ?>"<?php endif; ?>>
         <?php if ($profile['avatar']): ?>
             <img src="/uploads/avatars/<?= h($profile['avatar']) ?>" alt="Avatar" class="avatar-img">
         <?php else: ?>
@@ -75,6 +81,7 @@ if ($isOwner && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_pr
             <i class="fas fa-coins"></i> <?= (int)$profile['credits'] ?> credits
             <?php if ($profile['reputation'] > 0): ?> &middot; <i class="fas fa-star"></i> <?= number_format($profile['reputation'], 1) ?> rating<?php endif; ?>
             &middot; <i class="fas fa-book"></i> <?= $taughtSessions ?> taught
+            <?php if ($profile['updated_at']): ?> &middot; <i class="fas fa-circle" style="color:var(--success);font-size:0.5rem"></i> Active <?= timeAgo($profile['updated_at']) ?><?php endif; ?>
         </div>
         <?php if ($profile['availability']): ?>
             <p class="mt-4"><i class="fas fa-clock"></i> <strong>Availability:</strong> <?= h($profile['availability']) ?></p>
@@ -85,14 +92,29 @@ if ($isOwner && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_pr
 
         <?php if (!$isOwner && isset($_SESSION['user_id'])): ?>
             <?php if (!empty($offeredSkills)): ?>
-                <a href="/actions/request_session.php?teacher_id=<?= $profileId ?>&skill_id=<?= $offeredSkills[0]['skill_id'] ?>"
-                   class="btn btn-primary btn-sm mt-8">Request Session</a>
+                <?php if (count($offeredSkills) === 1): ?>
+                    <a href="/actions/request_session.php?teacher_id=<?= $profileId ?>&skill_id=<?= $offeredSkills[0]['skill_id'] ?>"
+                       class="btn btn-primary btn-sm mt-8"><i class="fas fa-calendar-plus"></i> Request Session</a>
+                <?php else: ?>
+                    <form method="GET" action="/actions/request_session.php" class="flex gap-8 items-center mt-8 flex-wrap">
+                        <input type="hidden" name="teacher_id" value="<?= $profileId ?>">
+                        <select name="skill_id" class="form-select-inline" required>
+                            <?php foreach ($offeredSkills as $sk): ?>
+                                <option value="<?= $sk['skill_id'] ?>">
+                                    <?= h($sk['skill_name']) ?> (<?= h($sk['proficiency']) ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-calendar-plus"></i> Request Session</button>
+                    </form>
+                <?php endif; ?>
             <?php endif; ?>
         <?php endif; ?>
 
         <?php if ($isOwner): ?>
             <button class="btn btn-outline btn-sm mt-8" onclick="openModal('editProfileModal')">Edit Profile</button>
             <button class="btn btn-outline btn-sm mt-8" onclick="document.getElementById('avatarInput').click()">Change Photo</button>
+            <button class="btn btn-outline btn-sm mt-8" onclick="copyProfileLink(this)" title="Copy your profile link"><i class="fas fa-link"></i> Copy Link</button>
             <form method="POST" enctype="multipart/form-data" action="/actions/upload_avatar.php" class="hidden">
                 <?= csrfField() ?>
                 <input type="file" id="avatarInput" name="avatar" accept="image/*" onchange="this.form.submit()">
@@ -169,19 +191,19 @@ if ($isOwner && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_pr
             <input type="hidden" name="update_profile" value="1">
             <div class="form-group">
                 <label for="name">Name</label>
-                <input type="text" id="name" name="name" value="<?= h($profile['name']) ?>" required>
+                <input type="text" id="name" name="name" value="<?= h($profile['name']) ?>" maxlength="100" required>
             </div>
             <div class="form-group">
                 <label for="bio">Bio</label>
-                <textarea id="bio" name="bio" placeholder="Tell others about yourself..."><?= h($profile['bio'] ?? '') ?></textarea>
+                <textarea id="bio" name="bio" placeholder="Tell others about yourself..." maxlength="1000"><?= h($profile['bio'] ?? '') ?></textarea>
             </div>
             <div class="form-group">
                 <label for="location">Location</label>
-                <input type="text" id="location" name="location" placeholder="e.g. Manila, Philippines" value="<?= h($profile['location'] ?? '') ?>">
+                <input type="text" id="location" name="location" placeholder="e.g. Manila, Philippines" value="<?= h($profile['location'] ?? '') ?>" maxlength="100">
             </div>
             <div class="form-group">
                 <label for="availability">Availability</label>
-                <textarea id="availability" name="availability" placeholder="e.g. Weekday evenings, weekends 10am–4pm"><?= h($profile['availability'] ?? '') ?></textarea>
+                <textarea id="availability" name="availability" placeholder="e.g. Weekday evenings, weekends 10am–4pm" maxlength="500"><?= h($profile['availability'] ?? '') ?></textarea>
                 <p class="form-hint">Let others know when you're free for sessions.</p>
             </div>
             <div class="flex gap-8 justify-end">
@@ -192,5 +214,21 @@ if ($isOwner && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_pr
     </div>
 </div>
 <?php endif; ?>
+
+<script>
+function copyProfileLink(btn) {
+    navigator.clipboard.writeText(window.location.href).then(function() {
+        var orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        btn.classList.add('btn-success');
+        setTimeout(function() {
+            btn.innerHTML = orig;
+            btn.classList.remove('btn-success');
+        }, 2000);
+    }).catch(function() {
+        showToast('Could not copy link.', 'error');
+    });
+}
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

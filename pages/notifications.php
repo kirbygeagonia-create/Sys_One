@@ -42,6 +42,11 @@ $pageTitle = 'Notifications'; require_once __DIR__ . '/../includes/header.php';
                         'session_complete' => 'fa-check',
                         'session_cancelled' => 'fa-exclamation-triangle',
                         'badge_earned' => 'fa-medal',
+                        'new_message' => 'fa-comment',
+                        'credit_refund' => 'fa-coins',
+                        'session_refund' => 'fa-undo',
+                        'session_reminder' => 'fa-clock',
+                        'credit_gift' => 'fa-gift',
                     ];
                     $iconClass = $icons[$notif['type']] ?? 'fa-thumbtack';
                     ?>
@@ -68,16 +73,20 @@ $pageTitle = 'Notifications'; require_once __DIR__ . '/../includes/header.php';
 
 <script>
 function markRead(btn, id) {
-    fetch('/actions/mark_read.php?id=' + id)
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (data.success) {
-                var item = btn.closest('.notif-item');
-                item.classList.remove('unread');
-                btn.remove();
-            }
-        })
-        .catch(function() {});
+    fetch('/actions/mark_read.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id, csrf_token: '<?= generateCsrfToken() ?>' })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            var item = btn.closest('.notif-item');
+            item.classList.remove('unread');
+            btn.remove();
+        }
+    })
+    .catch(function() {});
 }
 </script>
 

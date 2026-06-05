@@ -86,10 +86,105 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Confirm dialog helper
-function confirmAction(message, callback) {
-    if (confirm(message)) callback();
+// Branded confirmation dialog (replaces browser confirm())
+function showConfirm(message, onConfirm, confirmText, confirmClass) {
+    confirmText  = confirmText  || 'Confirm';
+    confirmClass = confirmClass || 'btn-primary';
+
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active';
+    overlay.id = 'confirmOverlay';
+    overlay.innerHTML =
+        '<div class="modal confirm-modal">' +
+        '  <h2><i class="fas fa-exclamation-triangle"></i> Are you sure?</h2>' +
+        '  <p class="text-muted mb-24">' + message + '</p>' +
+        '  <div class="flex gap-8 justify-end">' +
+        '    <button class="btn btn-outline" id="confirmCancel">Cancel</button>' +
+        '    <button class="btn ' + confirmClass + '" id="confirmOk">' + confirmText + '</button>' +
+        '  </div>' +
+        '</div>';
+
+    document.body.appendChild(overlay);
+
+    document.getElementById('confirmOk').addEventListener('click', function() {
+        overlay.remove();
+        onConfirm();
+    });
+    document.getElementById('confirmCancel').addEventListener('click', function() {
+        overlay.remove();
+    });
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.remove();
+    });
 }
+
+// Legacy confirm dialog helper (backwards compat)
+function confirmAction(message, callback) {
+    showConfirm(message, callback, 'Confirm', 'btn-primary');
+}
+
+// Character counter for textareas with maxlength
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('textarea[maxlength]').forEach(function(ta) {
+        var max = parseInt(ta.getAttribute('maxlength'));
+        var counter = document.createElement('span');
+        counter.className = 'char-counter';
+        counter.textContent = '0 / ' + max;
+        ta.parentNode.appendChild(counter);
+
+        ta.addEventListener('input', function() {
+            var len = ta.value.length;
+            counter.textContent = len + ' / ' + max;
+            counter.classList.toggle('char-counter-warn', len > max * 0.85);
+            counter.classList.toggle('char-counter-over', len >= max);
+        });
+    });
+});
+
+// Auto-resize textareas
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('textarea').forEach(function(ta) {
+        ta.style.overflow = 'hidden';
+        function resize() {
+            ta.style.height = 'auto';
+            ta.style.height = (ta.scrollHeight + 2) + 'px';
+        }
+        ta.addEventListener('input', resize);
+        resize();
+    });
+});
+
+// Focus trap for open modals
+document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Tab') return;
+    var activeModal = document.querySelector('.modal-overlay.active .modal');
+    if (!activeModal) return;
+
+    var focusable = activeModal.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    if (focusable.length === 0) return;
+
+    var first = focusable[0];
+    var last  = focusable[focusable.length - 1];
+
+    if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+        if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
+    }
+});
+
+// Auto-focus first input when modal opens
+var _origOpen = window.openModal;
+window.openModal = function(id) {
+    if (_origOpen) _origOpen(id);
+    var modal = document.getElementById(id);
+    if (modal) {
+        var first = modal.querySelector('input, select, textarea, button');
+        if (first) setTimeout(function() { first.focus(); }, 50);
+    }
+};
 
 // Load skills via AJAX (for modal forms and browse filter)
 function loadSkills(categorySelectId, skillSelectId) {
@@ -103,6 +198,7 @@ function loadSkills(categorySelectId, skillSelectId) {
         return;
     }
     skill.disabled = true;
+    skill.classList.add('is-loading');
     skill.innerHTML = '<option value="">Loading...</option>';
     fetch('/actions/get_skills.php?category_id=' + categoryId)
         .then(function(r) { return r.json(); })
@@ -115,10 +211,12 @@ function loadSkills(categorySelectId, skillSelectId) {
                 skill.appendChild(opt);
             });
             skill.disabled = false;
+            skill.classList.remove('is-loading');
         })
         .catch(function() {
             skill.innerHTML = '<option value="">Error loading skills</option>';
             skill.disabled = false;
+            skill.classList.remove('is-loading');
         });
 }
 
@@ -180,6 +278,76 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.classList.toggle('visible', window.scrollY > 400);
     });
 })();
+
+// Star rating keyboard accessibility
+document.querySelectorAll('.star-rating .star').forEach(function(star) {
+    star.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            star.click();
+        }
+        if (e.key === 'ArrowRight') {
+            var next = star.nextElementSibling;
+            if (next && next.classList.contains('star')) { next.focus(); next.click(); }
+        }
+        if (e.key === 'ArrowLeft') {
+            var prev = star.previousElementSibling;
+            if (prev && prev.classList.contains('star')) { prev.focus(); prev.click(); }
+        }
+    });
+});
+
+// Skeleton loader on browse page filter changes
+document.querySelectorAll('.browse-controls select').forEach(function(sel) {
+    sel.addEventListener('change', function() {
+        var grid = document.querySelector('.grid-2');
+        if (!grid) return;
+        grid.innerHTML = Array(6).fill(
+            '<div class="skeleton-card">' +
+            '<div class="skeleton skeleton-line skeleton-med"></div>' +
+            '<div class="skeleton skeleton-line skeleton-short"></div>' +
+            '<div class="skeleton skeleton-line skeleton-full"></div>' +
+            '</div>'
+        ).join('');
+    });
+});
+
+// Search autocomplete for browse page
+var searchInput = document.getElementById('search');
+if (searchInput) {
+    var dropList = document.createElement('ul');
+    dropList.className = 'autocomplete-list';
+    searchInput.parentNode.style.position = 'relative';
+    searchInput.parentNode.appendChild(dropList);
+
+    var debounceTimer;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        var val = this.value.trim();
+        if (val.length < 2) { dropList.innerHTML = ''; return; }
+        debounceTimer = setTimeout(function() {
+            fetch('/actions/search_skills.php?q=' + encodeURIComponent(val))
+                .then(function(r) { return r.json(); })
+                .then(function(items) {
+                    dropList.innerHTML = '';
+                    items.forEach(function(item) {
+                        var li = document.createElement('li');
+                        li.textContent = item.name + ' (' + item.category + ')';
+                        li.addEventListener('click', function() {
+                            searchInput.value = item.name;
+                            dropList.innerHTML = '';
+                            searchInput.closest('form').submit();
+                        });
+                        dropList.appendChild(li);
+                    });
+                });
+        }, 250);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target)) dropList.innerHTML = '';
+    });
+}
 
 // Password strength meter (shared by register.php and index.php modals)
 function checkPasswordStrength(pwd, barId) {

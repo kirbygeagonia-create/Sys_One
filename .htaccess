@@ -10,3 +10,16 @@
 
 # Protect sensitive directories
 RedirectMatch 404 /\.git
+
+# Browser security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+</IfModule>
+
+# Custom error pages
+ErrorDocument 404 /errors/404.php
+ErrorDocument 500 /errors/500.php

@@ -13,7 +13,8 @@ CREATE TABLE users (
     availability TEXT DEFAULT NULL,
     credits INT NOT NULL DEFAULT 3,
     reputation DECIMAL(2,1) DEFAULT 0.0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Skill categories
@@ -140,8 +141,9 @@ CREATE TABLE notifications (
 CREATE TABLE login_attempts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     ip_address VARCHAR(45) NOT NULL,
+    action VARCHAR(50) NOT NULL DEFAULT 'login',
     attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_ip_time (ip_address, attempt_time)
+    INDEX idx_ip_action_time (ip_address, action, attempt_time)
 );
 
 -- In-app messaging for session participants
@@ -182,6 +184,11 @@ CREATE TABLE password_reset_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- Database-level constraints
+ALTER TABLE users ADD CONSTRAINT chk_credits_floor CHECK (credits >= 0);
+ALTER TABLE users ADD CONSTRAINT chk_reputation CHECK (reputation BETWEEN 0.0 AND 5.0);
+ALTER TABLE sessions ADD CONSTRAINT chk_duration CHECK (duration > 0);
 
 -- Seed categories and skills
 INSERT INTO skill_categories (name, icon) VALUES

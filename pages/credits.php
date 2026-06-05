@@ -31,6 +31,10 @@ $pageTitle = 'Credits'; require_once __DIR__ . '/../includes/header.php';
     </div>
 </div>
 
+<div class="flex gap-8 mb-24">
+    <button class="btn btn-primary" onclick="openModal('giftCreditsModal')"><i class="fas fa-gift"></i> Gift Credits</button>
+</div>
+
 <div class="card">
     <div class="card-header">
         <h2>Transaction History</h2>
@@ -79,6 +83,30 @@ $pageTitle = 'Credits'; require_once __DIR__ . '/../includes/header.php';
             </table>
         </div>
     <?php endif; ?>
+</div>
+
+<!-- Gift Credits Modal -->
+<div class="modal-overlay" id="giftCreditsModal">
+    <div class="modal">
+        <h2><i class="fas fa-gift"></i> Gift Credits</h2>
+        <form method="POST" action="/actions/gift_credits.php">
+            <?= csrfField() ?>
+            <div class="form-group">
+                <label for="recipient_id">Recipient User ID</label>
+                <input type="number" id="recipient_id" name="recipient_id" placeholder="Enter the user's ID" min="1" required>
+                <p class="form-hint">You can find a user's ID in their profile URL.</p>
+            </div>
+            <div class="form-group">
+                <label for="amount">Credits to Gift</label>
+                <input type="number" id="amount" name="amount" placeholder="How many credits?" min="1" required>
+                <p class="form-hint">Your balance: <?= (int)$user['credits'] ?> credits</p>
+            </div>
+            <div class="flex gap-8 justify-end">
+                <button type="button" class="btn btn-outline" onclick="closeModal('giftCreditsModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-gift"></i> Send Gift</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

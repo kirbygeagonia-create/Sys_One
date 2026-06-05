@@ -31,9 +31,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare("INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)");
             $stmt->execute([$user['id'], $token, $expires]);
 
-            // In production, send email. For dev, show the link on screen + log it
-            $resetLink = "/auth/reset_password.php?token=$token";
-            setFlash('success', "Password reset link generated (dev mode): " . $resetLink);
+            $resetLink = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/auth/reset_password.php?token=' . $token;
+
+            $emailBody = "
+            <p>Hi,</p>
+            <p>You requested a password reset for your SkillLoop account.</p>
+            <p><a href=\"{$resetLink}\" style=\"color:#FF6B35\">Click here to reset your password</a></p>
+            <p>This link expires in 1 hour. If you did not request this, ignore this email.</p>
+            <p>&mdash; The SkillLoop Team</p>
+            ";
+
+            sendEmail($user['email'], 'Reset your SkillLoop password', $emailBody);
+            setFlash('success', 'If an account with that email exists, a reset link has been sent.');
         } else {
             // Don't reveal if email exists
             $sent = true;

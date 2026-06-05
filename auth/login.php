@@ -9,6 +9,11 @@ if (isset($_SESSION['user_id'])) {
 
 $error = '';
 
+// Session timeout message
+if (isset($_GET['reason']) && $_GET['reason'] === 'timeout') {
+    $error = 'Your session expired due to inactivity. Please log in again.';
+}
+
 // IP-based rate limiting: track attempts in database
 $ip = $_SERVER['REMOTE_ADDR'] ?? '';
 
@@ -21,7 +26,7 @@ try {
     }
 
     // Check IP-based attempts
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_address = ? AND attempt_time > DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_address = ? AND action = 'login' AND attempt_time > DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
     $stmt->execute([$ip]);
     $ipAttempts = (int)$stmt->fetchColumn();
     if ($ipAttempts >= 5) {
@@ -53,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
-            // Successful login: clear all attempt records
+            // Successful login: clear all attempt records for this IP
             $pdo->prepare("DELETE FROM login_attempts WHERE ip_address = ?")->execute([$ip]);
             $_SESSION['user_id'] = $user['id'];
             session_regenerate_id(true);
@@ -64,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
             exit;
         } else {
             // Record failed attempt in DB
-            $pdo->prepare("INSERT INTO login_attempts (ip_address) VALUES (?)")->execute([$ip]);
+            $pdo->prepare("INSERT INTO login_attempts (ip_address, action) VALUES (?, 'login')")->execute([$ip]);
             $_SESSION['login_attempts']++;
             if ($_SESSION['login_attempts'] >= 5) {
                 $_SESSION['login_lockout'] = time() + 900; // 15 min lockout

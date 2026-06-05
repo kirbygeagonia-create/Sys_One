@@ -1,4 +1,6 @@
 <?php
+define('SESSION_TIMEOUT', 7200); // 2 hours in seconds
+
 /**
  * Start session if not already started
  */
@@ -9,10 +11,27 @@ function startSession() {
 }
 
 /**
+ * Check session timeout based on last activity
+ */
+function checkSessionTimeout() {
+    startSession();
+    if (isset($_SESSION['user_id']) && isset($_SESSION['last_activity'])) {
+        if (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT) {
+            session_unset();
+            session_destroy();
+            header('Location: /auth/login.php?reason=timeout');
+            exit;
+        }
+    }
+    $_SESSION['last_activity'] = time();
+}
+
+/**
  * Check if user is logged in, redirect if not
  */
 function requireLogin() {
     startSession();
+    checkSessionTimeout();
     if (!isset($_SESSION['user_id'])) {
         header('Location: /auth/login.php');
         exit;
@@ -291,6 +310,71 @@ function getUnreadCount($pdo, $userId) {
 }
 
 /**
+ * Send a simple HTML email
+ * Replace with PHPMailer for production SMTP
+ */
+function sendEmail($to, $subject, $htmlBody) {
+    $headers  = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+    $headers .= "From: SkillLoop <noreply@skillloop.local>\r\n";
+    $headers .= "X-Mailer: PHP/" . PHP_VERSION . "\r\n";
+    return mail($to, $subject, $htmlBody, $headers);
+}
+
+/**
+ * Simple IP-based rate limiter using the login_attempts table.
+ * Returns true if the action is allowed, false if rate-limited.
+ */
+function checkRateLimit($pdo, $ip, $action, $maxAttempts = 10, $windowMinutes = 15) {
+    // Clean old records
+    $pdo->prepare("DELETE FROM login_attempts WHERE attempt_time < DATE_SUB(NOW(), INTERVAL ? MINUTE) AND action = ?")
+        ->execute([$windowMinutes, $action]);
+
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_address = ? AND action = ? AND attempt_time > DATE_SUB(NOW(), INTERVAL ? MINUTE)");
+    $stmt->execute([$ip, $action, $windowMinutes]);
+
+    if ((int)$stmt->fetchColumn() >= $maxAttempts) {
+        return false;
+    }
+
+    $pdo->prepare("INSERT INTO login_attempts (ip_address, action) VALUES (?, ?)")
+        ->execute([$ip, $action]);
+    return true;
+}
+
+/**
+ * Return a CSS hsl() color deterministically derived from a string
+ */
+function nameToColor($name) {
+    $hash = 0;
+    for ($i = 0; $i < strlen($name); $i++) {
+        $hash = ord($name[$i]) + (($hash << 5) - $hash);
+        $hash &= $hash;
+    }
+    $hue = abs($hash) % 360;
+    return "hsl({$hue}, 60%, 55%)";
+}
+
+/**
+ * Find users who want to learn skills the given user offers
+ */
+function getPotentialLearners($pdo, $userId, $limit = 5) {
+    $stmt = $pdo->prepare("
+        SELECT DISTINCT u.id, u.name, u.reputation, s.name AS skill_name, sc.icon AS category_icon
+        FROM user_skills_wanted usw
+        JOIN users u ON usw.user_id = u.id
+        JOIN skills s ON usw.skill_id = s.id
+        JOIN skill_categories sc ON s.category_id = sc.id
+        JOIN user_skills_offered uso ON uso.skill_id = usw.skill_id AND uso.user_id = ?
+        WHERE usw.user_id != ?
+        ORDER BY u.reputation DESC
+        LIMIT ?
+    ");
+    $stmt->execute([$userId, $userId, $limit]);
+    return $stmt->fetchAll();
+}
+
+/**
  * ===== MESSAGING =====
  */
 
@@ -337,6 +421,14 @@ function markMessagesRead($pdo, $sessionId, $userId) {
 }
 
 /**
+ * Check if a path matches the current page for nav active state
+ */
+function isActive($path) {
+    $current = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    return $current === $path || str_starts_with($current, $path) ? 'nav-active' : '';
+}
+
+/**
  * Sanitize output for HTML
  */
 function h($str) {
@@ -348,9 +440,15 @@ function h($str) {
  */
 function timeAgo($timestamp) {
     $diff = time() - strtotime($timestamp);
-    if ($diff < 60) return 'just now';
-    if ($diff < 3600) return floor($diff / 60) . 'm ago';
-    if ($diff < 86400) return floor($diff / 3600) . 'h ago';
-    if ($diff < 604800) return floor($diff / 86400) . 'd ago';
-    return date('M j', strtotime($timestamp));
+    $absDiff = abs($diff);
+    $future = $diff < 0;
+
+    if ($absDiff < 60)      $str = 'just now';
+    elseif ($absDiff < 3600)   $str = floor($absDiff / 60) . 'm';
+    elseif ($absDiff < 86400)  $str = floor($absDiff / 3600) . 'h';
+    elseif ($absDiff < 604800) $str = floor($absDiff / 86400) . 'd';
+    else                    $str = date('M j', strtotime($timestamp));
+
+    if ($str === 'just now') return $str;
+    return $future ? 'in ' . $str : $str . ' ago';
 }

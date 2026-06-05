@@ -795,3 +795,180 @@ tr:last-child td { border-bottom: none; }
 .hero-muted-text { font-size: 0.95rem; opacity: 0.85; }
 .hero-link { color: #fff; text-decoration: underline; }
 .hero-link:hover { color: rgba(255,255,255,0.85); }
+
+/* ===== Form select inline (profile multi-skill) ===== */
+.form-select-inline {
+    padding: 6px 10px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+}
+.form-select-inline:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* ===== Confirm Modal ===== */
+.confirm-modal { max-width: 400px; }
+.confirm-modal h2 { color: var(--error); }
+
+/* ===== Nav Active State ===== */
+.nav-links a.nav-active {
+    background: var(--primary-light);
+    color: var(--primary-dark) !important;
+    font-weight: 600;
+}
+
+/* ===== Character Counter ===== */
+.char-counter {
+    display: block;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.char-counter-warn { color: var(--accent); }
+.char-counter-over { color: var(--error); font-weight: 600; }
+
+/* ===== Loading Spinner for Selects ===== */
+select.is-loading {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23FF6B35' stroke-width='2' stroke-dasharray='20 10'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 8 8' to='360 8 8' dur='0.8s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 36px;
+}
+
+/* ===== Session Progress Stepper ===== */
+.session-progress {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-top: 8px;
+    font-size: 0.75rem;
+}
+.progress-step {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--border);
+    white-space: nowrap;
+}
+.progress-step.active { color: var(--primary); }
+.progress-step.done   { color: var(--success); }
+.progress-line {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    margin: 0 6px;
+    min-width: 20px;
+}
+.progress-line.done { background: var(--success); }
+
+/* ===== Mobile Session Table → Card ===== */
+@media (max-width: 600px) {
+    .sessions-table thead { display: none; }
+    .sessions-table tr {
+        display: block;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px;
+        margin-bottom: 12px;
+    }
+    .sessions-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px dashed var(--border);
+        padding: 6px 0;
+        font-size: 0.85rem;
+    }
+    .sessions-table td:last-child { border-bottom: none; padding-top: 10px; justify-content: flex-end; }
+    .sessions-table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+}
+
+/* ===== Onboarding Banner ===== */
+.onboarding-banner {
+    border: 2px dashed var(--primary);
+    background: var(--primary-light);
+}
+.onboarding-icon {
+    font-size: 2.5rem;
+    color: var(--primary);
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+/* ===== Skeleton Loaders ===== */
+.skeleton {
+    background: linear-gradient(90deg, var(--bg-alt) 25%, var(--border) 50%, var(--bg-alt) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-sm);
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.skeleton-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+}
+.skeleton-line  { height: 14px; margin-bottom: 10px; }
+.skeleton-short { width: 40%; }
+.skeleton-med   { width: 70%; }
+.skeleton-full  { width: 100%; }
+
+/* ===== Autocomplete List ===== */
+.autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border: 2px solid var(--primary);
+    border-top: none;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    list-style: none;
+    z-index: 50;
+    max-height: 220px;
+    overflow-y: auto;
+    box-shadow: var(--shadow-md);
+}
+.autocomplete-list li {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--border);
+}
+.autocomplete-list li:last-child { border-bottom: none; }
+.autocomplete-list li:hover { background: var(--primary-light); color: var(--primary-dark); }
+
+/* ===== Error Pages ===== */
+.error-page {
+    min-height: 50vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.error-page .error-icon {
+    font-size: 4rem;
+    margin-bottom: 16px;
+}
+.error-page .error-icon.error-404 { color: var(--primary); }
+.error-page .error-icon.error-500 { color: var(--error); }
+
+/* ===== Learners Widget Star ===== */
+.star-static { color: #f59e0b; }

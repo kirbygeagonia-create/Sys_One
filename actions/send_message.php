@@ -14,6 +14,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $sessionId = (int)($_POST['session_id'] ?? 0);
 $message = trim($_POST['message'] ?? '');
 
+// Rate limit messages
+$ip = $_SERVER['REMOTE_ADDR'];
+if (!checkRateLimit($pdo, $ip, 'send_message', 10, 1)) {
+    setFlash('error', 'You are sending messages too quickly. Please slow down.');
+    header('Location: /pages/sessions.php');
+    exit;
+}
+
 if (!$sessionId || empty($message)) {
     setFlash('error', 'Message cannot be empty.');
     header('Location: /pages/sessions.php');

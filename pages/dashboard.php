@@ -83,7 +83,22 @@ $pageTitle = 'Dashboard'; require_once __DIR__ . '/../includes/header.php';
     </div>
 </div>
 
+<!-- Onboarding banner for new users with no skills -->
+<?php if ($offeredSkillsCount === 0): ?>
+<div class="card mb-24 onboarding-banner">
+    <div class="flex gap-16 items-start">
+        <i class="fas fa-chalkboard-teacher onboarding-icon"></i>
+        <div>
+            <h2>Welcome to SkillLoop!</h2>
+            <p class="text-muted">Start by listing the skills you can teach or want to learn. You'll earn credits by teaching others and use those credits to learn new skills.</p>
+            <a href="/pages/skills.php" class="btn btn-primary mt-12"><i class="fas fa-clipboard-list"></i> Get Started — Add Your Skills</a>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="grid-2">
+    <div class="grid-2">
     <!-- Upcoming Sessions -->
     <div class="card">
         <div class="card-header">
@@ -157,6 +172,30 @@ $pageTitle = 'Dashboard'; require_once __DIR__ . '/../includes/header.php';
         <a href="/pages/credits.php" class="btn btn-outline"><i class="fas fa-coins"></i> Credit History</a>
     </div>
 </div>
+
+<!-- Learners Looking For You -->
+<?php $learners = getPotentialLearners($pdo, $userId); ?>
+<?php if (!empty($learners)): ?>
+<div class="card mt-24">
+    <div class="card-header">
+        <h2><i class="fas fa-users"></i> Learners Looking For You</h2>
+        <a href="/pages/browse.php" class="btn btn-sm btn-outline">Browse All</a>
+    </div>
+    <?php foreach ($learners as $learner): ?>
+        <div class="flex justify-between items-center border-bottom item-row">
+            <div>
+                <a href="/pages/profile.php?id=<?= $learner['id'] ?>" class="fw-600"><?= h($learner['name']) ?></a>
+                <span class="text-sm text-muted ml-4">
+                    wants <span class="skill-tag"><i class="fas <?= h($learner['category_icon']) ?>"></i> <?= h($learner['skill_name']) ?></span>
+                </span>
+            </div>
+            <?php if ($learner['reputation'] > 0): ?>
+                <span class="star-static"><i class="fas fa-star"></i> <?= number_format($learner['reputation'], 1) ?></span>
+            <?php endif; ?>
+        </div>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
 
 <!-- Skill Recommendations -->
 <?php

@@ -54,6 +54,18 @@ $stmt = $pdo->prepare("
 $stmt->execute([$userId]);
 $pendingRequests = $stmt->fetchAll();
 
+/**
+ * Get session lifecycle step for progress indicator
+ */
+function getSessionStep($session, $userId) {
+    if ($session['status'] === 'cancelled') return -1;
+    if ($session['status'] === 'completed')  return 4;
+    $isTeacher = $session['teacher_id'] == $userId;
+    $myConfirmed = $isTeacher ? $session['teacher_confirmed'] : $session['requester_confirmed'];
+    if ($myConfirmed) return 3;
+    return 2;
+}
+
 $pageTitle = 'Sessions'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
@@ -101,7 +113,7 @@ $pageTitle = 'Sessions'; require_once __DIR__ . '/../includes/header.php';
     </div>
 <?php else: ?>
     <div class="table-wrapper">
-        <table>
+        <table class="sessions-table">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -121,19 +133,35 @@ $pageTitle = 'Sessions'; require_once __DIR__ . '/../includes/header.php';
                     $otherName = $isTeacher ? $session['requester_name'] : $session['teacher_name'];
                     ?>
                     <tr>
-                        <td><?= date('M j, g:i A', strtotime($session['scheduled_at'])) ?></td>
-                        <td>
+                        <td data-label="Date"><?= date('M j, g:i A', strtotime($session['scheduled_at'])) ?></td>
+                        <td data-label="Skill">
                             <span class="skill-tag"><i class="fas <?= h($session['category_icon']) ?>"></i> <?= h($session['skill_name']) ?></span>
                         </td>
-                        <td><?= h($otherName) ?></td>
-                        <td><?= $isTeacher ? '<i class="fas fa-chalkboard-teacher"></i> Teacher' : '<i class="fas fa-graduation-cap"></i> Learner' ?></td>
-                        <td><?= (int)$session['duration'] ?> min</td>
-                        <td>
+                        <td data-label="With"><?= h($otherName) ?></td>
+                        <td data-label="Role"><?= $isTeacher ? '<i class="fas fa-chalkboard-teacher"></i> Teacher' : '<i class="fas fa-graduation-cap"></i> Learner' ?></td>
+                        <td data-label="Duration"><?= (int)$session['duration'] ?> min</td>
+                        <td data-label="Status">
                             <span class="status-badge status-<?= h($session['status']) ?>">
                                 <?= ucfirst(h($session['status'])) ?>
                             </span>
+                            <?php $step = getSessionStep($session, $userId); ?>
+                            <?php if ($session['status'] === 'scheduled'): ?>
+                            <div class="session-progress">
+                                <div class="progress-step <?= $step >= 2 ? 'done' : '' ?>">
+                                    <i class="fas fa-check-circle"></i><span>Accepted</span>
+                                </div>
+                                <div class="progress-line <?= $step >= 3 ? 'done' : '' ?>"></div>
+                                <div class="progress-step <?= $step >= 3 ? 'done' : ($step >= 2 ? 'active' : '') ?>">
+                                    <i class="fas fa-user-check"></i><span>Your Confirm</span>
+                                </div>
+                                <div class="progress-line <?= $step >= 4 ? 'done' : '' ?>"></div>
+                                <div class="progress-step <?= $step >= 4 ? 'done' : '' ?>">
+                                    <i class="fas fa-flag-checkered"></i><span>Complete</span>
+                                </div>
+                            </div>
+                            <?php endif; ?>
                         </td>
-                        <td>
+                        <td data-label="Chat">
                             <?php if ($session['status'] === 'scheduled' || $session['status'] === 'completed'): ?>
                                 <button class="btn btn-sm btn-outline" onclick="openModal('chatModal_<?= $session['id'] ?>')" title="Chat about this session">
                                     <i class="fas fa-comment"></i>
@@ -142,7 +170,7 @@ $pageTitle = 'Sessions'; require_once __DIR__ . '/../includes/header.php';
                                 <span class="text-muted text-sm">—</span>
                             <?php endif; ?>
                         </td>
-                        <td>
+                        <td data-label="Action">
                             <?php if ($session['status'] === 'scheduled' && !$session['my_rating']): ?>
                                 <div class="flex gap-4">
                                 <form method="POST" action="/actions/complete_session.php" class="inline">

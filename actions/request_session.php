@@ -35,6 +35,15 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf();
+
+    // Rate limit session requests
+    $ip = $_SERVER['REMOTE_ADDR'];
+    if (!checkRateLimit($pdo, $ip, 'request_session', 5, 15)) {
+        $error = 'Too many session requests. Please try again later.';
+    }
+    if (empty($error) && !checkRateLimit($pdo, $ip, 'request_session', 20, 60)) {
+        $error = 'You have exceeded the session request limit. Please try again later.';
+    }
     $message = trim($_POST['message'] ?? '');
     $scheduledDate = $_POST['scheduled_date'] ?? '';
     $duration = (int)($_POST['duration'] ?? 60);
