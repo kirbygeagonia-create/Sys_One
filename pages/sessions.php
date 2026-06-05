@@ -188,7 +188,7 @@ $pageTitle = 'Sessions'; require_once __DIR__ . '/../includes/header.php';
                                 <form method="POST" action="/actions/cancel_session.php" class="inline">
                                     <?= csrfField() ?>
                                     <input type="hidden" name="session_id" value="<?= $session['id'] ?>">
-                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Cancel this session?')"><i class="fas fa-times"></i></button>
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="showConfirm('Cancel this session?', function(){ this.closest('form').submit(); }.bind(this), 'Cancel Session', 'btn-danger')"><i class="fas fa-times"></i></button>
                                 </form>
                                 </div>
                             <?php elseif ($session['status'] === 'completed' && !$session['my_rating']): ?>

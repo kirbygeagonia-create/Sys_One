@@ -36,7 +36,7 @@ $pageTitle = 'My Skills'; require_once __DIR__ . '/../includes/header.php';
                             <input type="hidden" name="type" value="offer">
                             <input type="hidden" name="action" value="remove">
                             <input type="hidden" name="skill_id" value="<?= $skill['skill_id'] ?>">
-                            <button type="submit" onclick="return confirm('Remove this skill?')" class="btn-text-icon text-error font-bold no-underline">&times;</button>
+                            <button type="button" onclick="showConfirm('Remove this skill from your list?', function(){ this.closest('form').submit(); }.bind(this), 'Remove', 'btn-danger')" class="btn-text-icon text-error font-bold no-underline">&times;</button>
                         </form>
                     </div>
                 <?php endforeach; ?>
@@ -64,7 +64,7 @@ $pageTitle = 'My Skills'; require_once __DIR__ . '/../includes/header.php';
                             <input type="hidden" name="type" value="want">
                             <input type="hidden" name="action" value="remove">
                             <input type="hidden" name="skill_id" value="<?= $skill['skill_id'] ?>">
-                            <button type="submit" onclick="return confirm('Remove this skill?')" class="btn-text-icon text-error font-bold no-underline">&times;</button>
+                            <button type="button" onclick="showConfirm('Remove this skill from your list?', function(){ this.closest('form').submit(); }.bind(this), 'Remove', 'btn-danger')" class="btn-text-icon text-error font-bold no-underline">&times;</button>
                         </form>
                     </div>
                 <?php endforeach; ?>

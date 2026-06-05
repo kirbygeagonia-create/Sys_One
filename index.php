@@ -1,6 +1,5 @@
-<?php $pageTitle = 'Home'; require_once __DIR__ . '/includes/header.php'; ?>
+<?php $pageTitle = 'Home'; $fullWidthPage = true; require_once __DIR__ . '/includes/header.php'; ?>
 
-</main><!-- close container main to allow full-width hero -->
 <section class="hero">
     <div class="hero-content">
         <h1>Trade Skills, Not Money.</h1>
@@ -24,7 +23,7 @@
     </div>
 </section>
 
-<main class="container main-content">
+<div class="container main-content">
 <section class="section">
     <div class="container">
         <h2 class="section-title">How It Works</h2>
@@ -76,8 +75,8 @@
     </div>
 </section>
 
-<!-- Login Modal -->
-<div class="modal-overlay" id="loginModal">
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal">
     <div class="modal">
         <h2>Login</h2>
         <p class="text-muted mb-16">Welcome back! Sign in to continue.</p>
@@ -141,4 +140,5 @@
     </div>
 </div>
 
+</div><!-- /container -->
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

@@ -241,6 +241,23 @@ test('No emoji characters in source files', count($emojiFiles) === 0,
     count($emojiFiles) > 0 ? 'Found in: ' . implode(', ', array_unique($emojiFiles)) : '');
 
 // ============================================================
+// 12b. NATIVE CONFIRM() DETECTION
+// ============================================================
+$confirmFiles = [];
+foreach ($phpFilesForScan as $file) {
+    if ($file->getExtension() !== 'php') continue;
+    $path = $file->getRealPath();
+    if (strpos($path, 'tests' . DIRECTORY_SEPARATOR) !== false) continue;
+    $content = file_get_contents($path);
+    if (strpos($content, "onclick=\"return confirm(") !== false ||
+        strpos($content, "onclick='return confirm(") !== false) {
+        $confirmFiles[] = $file->getFilename();
+    }
+}
+test('No native confirm() dialogs remain', count($confirmFiles) === 0,
+    count($confirmFiles) > 0 ? 'Found in: ' . implode(', ', $confirmFiles) : '');
+
+// ============================================================
 // 13. DATABASE CONNECTION TEST
 // ============================================================
 try {

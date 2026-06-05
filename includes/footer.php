@@ -1,3 +1,6 @@
+<?php if (!isset($fullWidthPage) || !$fullWidthPage): ?>
+    </div><!-- /container -->
+<?php endif; ?>
 </main>
     <footer class="footer">
         <div class="container">

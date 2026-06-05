@@ -79,5 +79,8 @@ if (isset($_SESSION['user_id'])) {
             </ul>
         </div>
     </nav>
-    <main class="container main-content">
+    <main>
+        <?php if (!isset($fullWidthPage) || !$fullWidthPage): ?>
+        <div class="container main-content">
+        <?php endif; ?>
         <?= displayFlashes() ?>

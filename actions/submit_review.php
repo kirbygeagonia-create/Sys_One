@@ -105,7 +105,7 @@ $pageTitle = 'Submit Review'; require_once __DIR__ . '/../includes/header.php';
                 <?php for ($i = 1; $i <= 5; $i++): ?>
                     <label class="cursor-pointer">
                         <input type="radio" name="rating" value="<?= $i ?>" class="sr-only" onchange="highlightStars(this)">
-                        <span class="star" data-value="<?= $i ?>">&#9733;</span>
+                        <span class="star" data-value="<?= $i ?>" tabindex="0" role="radio" aria-label="<?= $i ?> star<?= $i > 1 ? 's' : '' ?>" aria-checked="false">&#9733;</span>
                     </label>
                 <?php endfor; ?>
             </div>
