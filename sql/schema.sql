@@ -79,6 +79,7 @@ CREATE TABLE sessions (
     requester_confirmed TINYINT(1) DEFAULT 0,
     teacher_confirmed TINYINT(1) DEFAULT 0,
     completed_at TIMESTAMP NULL DEFAULT NULL,
+    reminded_at TIMESTAMP NULL DEFAULT NULL,
     FOREIGN KEY (request_id) REFERENCES session_requests(id) ON DELETE CASCADE
 );
 
@@ -189,6 +190,7 @@ CREATE TABLE password_reset_tokens (
 ALTER TABLE users ADD CONSTRAINT chk_credits_floor CHECK (credits >= 0);
 ALTER TABLE users ADD CONSTRAINT chk_reputation CHECK (reputation BETWEEN 0.0 AND 5.0);
 ALTER TABLE sessions ADD CONSTRAINT chk_duration CHECK (duration > 0);
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS reminded_at TIMESTAMP NULL DEFAULT NULL;
 
 -- Seed categories and skills
 INSERT INTO skill_categories (name, icon) VALUES

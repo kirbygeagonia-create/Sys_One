@@ -1,14 +1,19 @@
 <?php
 require_once __DIR__ . '/../includes/functions.php';
+startSession();
 require_once __DIR__ . '/../config/database.php';
 
 $q = trim($_GET['q'] ?? '');
 if (strlen($q) < 2) {
+    header('Content-Type: application/json');
     echo json_encode([]);
     exit;
 }
 
 header('Content-Type: application/json');
+
+// Only return user-name results to logged-in users
+$includeUsers = isset($_SESSION['user_id']);
 
 $stmt = $pdo->prepare("
     SELECT s.id, s.name, sc.name AS category
@@ -31,4 +36,5 @@ $stmt2 = $pdo->prepare("
 ");
 $stmt2->execute(['%' . $q . '%']);
 
-echo json_encode(array_merge($results, $stmt2->fetchAll()));
+$userResults = $includeUsers ? $stmt2->fetchAll() : [];
+echo json_encode(array_merge($results, $userResults));

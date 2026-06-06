@@ -98,8 +98,8 @@ $pageTitle = 'Credits'; require_once __DIR__ . '/../includes/header.php';
             </div>
             <div class="form-group">
                 <label for="amount">Credits to Gift</label>
-                <input type="number" id="amount" name="amount" placeholder="How many credits?" min="1" required>
-                <p class="form-hint">Your balance: <?= (int)$user['credits'] ?> credits</p>
+                <input type="number" id="amount" name="amount" placeholder="1 – 10" min="1" max="10" required>
+                <p class="form-hint">Max 10 credits per gift &middot; Your balance: <?= (int)$user['credits'] ?> credits</p>
             </div>
             <div class="flex gap-8 justify-end">
                 <button type="button" class="btn btn-outline" onclick="closeModal('giftCreditsModal')">Cancel</button>

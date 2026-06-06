@@ -81,7 +81,7 @@ if ($isOwner && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_pr
             <i class="fas fa-coins"></i> <?= (int)$profile['credits'] ?> credits
             <?php if ($profile['reputation'] > 0): ?> &middot; <i class="fas fa-star"></i> <?= number_format($profile['reputation'], 1) ?> rating<?php endif; ?>
             &middot; <i class="fas fa-book"></i> <?= $taughtSessions ?> taught
-            <?php if ($profile['updated_at']): ?> &middot; <i class="fas fa-circle" style="color:var(--success);font-size:0.5rem"></i> Active <?= timeAgo($profile['updated_at']) ?><?php endif; ?>
+            <?php if ($profile['updated_at']): ?> &middot; <i class="fas fa-circle dot-active"></i> Active <?= timeAgo($profile['updated_at']) ?><?php endif; ?>
         </div>
         <?php if ($profile['availability']): ?>
             <p class="mt-4"><i class="fas fa-clock"></i> <strong>Availability:</strong> <?= h($profile['availability']) ?></p>
@@ -214,21 +214,5 @@ if ($isOwner && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_pr
     </div>
 </div>
 <?php endif; ?>
-
-<script>
-function copyProfileLink(btn) {
-    navigator.clipboard.writeText(window.location.href).then(function() {
-        var orig = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-        btn.classList.add('btn-success');
-        setTimeout(function() {
-            btn.innerHTML = orig;
-            btn.classList.remove('btn-success');
-        }, 2000);
-    }).catch(function() {
-        showToast('Could not copy link.', 'error');
-    });
-}
-</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

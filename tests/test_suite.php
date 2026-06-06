@@ -208,8 +208,9 @@ foreach ($phpFilesForScan as $file) {
     if ($file->getExtension() !== 'php') continue;
     $path = $file->getRealPath();
     if (strpos($path, 'tests' . DIRECTORY_SEPARATOR) !== false) continue;
-    // Skip profile.php — its inline style is a dynamic avatar color (nameToColor)
-    // that cannot be expressed as a static CSS class
+    // Skip profile.php — it has one legitimate inline style: the dynamic avatar
+    // background color computed by nameToColor(), which cannot be a static CSS class.
+    // All other inline styles in profile.php must be removed (e.g. use .dot-active).
     if (strpos($path, 'profile.php') !== false) continue;
     $content = file_get_contents($path);
     if (preg_match('/style\s*=\s*["\'](?!["\'])/', $content)) {

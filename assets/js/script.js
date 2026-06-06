@@ -332,11 +332,20 @@ if (searchInput) {
                     dropList.innerHTML = '';
                     items.forEach(function(item) {
                         var li = document.createElement('li');
-                        li.textContent = item.name + ' (' + item.category + ')';
+                        if (item.category === 'User') {
+                            li.innerHTML = '<i class=\"fas fa-user\"></i> ' + item.name;
+                            li.classList.add('autocomplete-user');
+                        } else {
+                            li.textContent = item.name + ' (' + item.category + ')';
+                        }
                         li.addEventListener('click', function() {
-                            searchInput.value = item.name;
                             dropList.innerHTML = '';
-                            searchInput.closest('form').submit();
+                            if (item.category === 'User') {
+                                window.location.href = '/pages/profile.php?id=' + item.id;
+                            } else {
+                                searchInput.value = item.name;
+                                searchInput.closest('form').submit();
+                            }
                         });
                         dropList.appendChild(li);
                     });
@@ -365,4 +374,23 @@ function checkPasswordStrength(pwd, barId) {
     if (score <= 1) { bar.classList.add('weak'); }
     else if (score <= 2) { bar.classList.add('medium'); }
     else { bar.classList.add('strong'); }
+}
+
+// Copy current page URL to clipboard (used on profile.php)
+function copyProfileLink(btn) {
+    if (!navigator.clipboard) {
+        showToast('Clipboard not supported in this browser.', 'error');
+        return;
+    }
+    navigator.clipboard.writeText(window.location.href).then(function() {
+        var orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        btn.classList.add('btn-success');
+        setTimeout(function() {
+            btn.innerHTML = orig;
+            btn.classList.remove('btn-success');
+        }, 2000);
+    }).catch(function() {
+        showToast('Could not copy link.', 'error');
+    });
 }

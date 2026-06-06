@@ -953,6 +953,8 @@ select.is-loading {
 }
 .autocomplete-list li:last-child { border-bottom: none; }
 .autocomplete-list li:hover { background: var(--primary-light); color: var(--primary-dark); }
+.autocomplete-list .autocomplete-user { color: var(--text-muted); font-style: italic; }
+.autocomplete-list .autocomplete-user i { margin-right: 6px; color: var(--primary); }
 
 /* ===== Error Pages ===== */
 .error-page {
@@ -972,3 +974,4 @@ select.is-loading {
 
 /* ===== Learners Widget Star ===== */
 .star-static { color: #f59e0b; }
+.dot-active { color: var(--success); font-size: 0.5rem; vertical-align: middle; }

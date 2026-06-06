@@ -20,6 +20,7 @@ $stmt = $pdo->prepare("
     JOIN users req ON sr.requester_id = req.id
     JOIN users t ON sr.teacher_id = t.id
     WHERE s.status = 'scheduled'
+    AND s.reminded_at IS NULL
     AND s.scheduled_at BETWEEN DATE_ADD(NOW(), INTERVAL 30 MINUTE) AND DATE_ADD(NOW(), INTERVAL 60 MINUTE)
 ");
 
@@ -41,6 +42,10 @@ foreach ($sessions as $session) {
         "Reminder: Your {$skillName} session with {$session['requester_name']} starts at {$timeStr}",
         '/pages/sessions.php'
     );
+
+    // Prevent duplicate reminders on the next cron run
+    $pdo->prepare("UPDATE sessions SET reminded_at = NOW() WHERE id = ?")
+        ->execute([$session['id']]);
 
     $reminded++;
 }

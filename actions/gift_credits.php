@@ -14,8 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $recipientId = (int)($_POST['recipient_id'] ?? 0);
 $amount = (int)($_POST['amount'] ?? 0);
 
-if ($recipientId <= 0 || $amount < 1) {
-    setFlash('error', 'Invalid gift request.');
+if ($recipientId <= 0 || $amount < 1 || $amount > 10) {
+    setFlash('error', 'You can gift between 1 and 10 credits at a time.');
     header('Location: /pages/credits.php');
     exit;
 }
