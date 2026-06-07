@@ -100,8 +100,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare("INSERT INTO sessions (request_id, scheduled_at, duration) VALUES (?, ?, ?)");
                 $stmt->execute([$requestId, $scheduledDate, $duration]);
 
-                // Deduct credit immediately to reserve it
-                addCredits($pdo, $userId, 1, 'spend', $teacherId, 'session_request', $requestId, 'Reserved for session: ' . $skill['name']);
+                // Deduct credit immediately to reserve it (inline — cannot call addCredits() inside a transaction)
+                $pdo->prepare("
+                    INSERT INTO credit_transactions
+                        (user_id, counterparty_id, amount, type, reference_type, reference_id, description)
+                    VALUES (?, ?, 1, 'spend', 'session_request', ?, ?)
+                ")->execute([$userId, $teacherId, $requestId, 'Reserved for session: ' . $skill['name']]);
+
+                $pdo->prepare("UPDATE users SET credits = GREATEST(credits - 1, 0) WHERE id = ?")
+                    ->execute([$userId]);
 
                 $pdo->commit();
 

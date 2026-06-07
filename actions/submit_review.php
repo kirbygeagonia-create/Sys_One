@@ -65,6 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($isTeacher) {
             $badgeLevel = $_POST['badge_level'] ?? 'beginner';
+            $allowedLevels = ['beginner', 'intermediate', 'advanced'];
+            if (!in_array($badgeLevel, $allowedLevels)) {
+                $badgeLevel = 'beginner';
+            }
             $stmt = $pdo->prepare("INSERT INTO badges (session_id, issuer_id, recipient_id, skill_id, level) VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([$sessionId, $userId, $session['requester_id'], $session['skill_id'], $badgeLevel]);
 

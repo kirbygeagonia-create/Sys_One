@@ -175,9 +175,29 @@ $pageTitle = 'Find Teachers'; require_once __DIR__ . '/../includes/header.php';
                 <?php endif; ?>
 
                 <?php if (isset($_SESSION['user_id']) && $_SESSION['user_id'] != $teacher['id']): ?>
-                    <?php $firstSkillId = (int) explode(',', $teacher['skill_ids'] ?? '0')[0]; ?>
-                    <a href="/actions/request_session.php?teacher_id=<?= $teacher['id'] ?>&skill_id=<?= $firstSkillId ?>"
-                       class="btn btn-primary btn-sm">Request Session</a>
+                    <?php
+                    $skillIdArr   = explode(',', $teacher['skill_ids'] ?? '');
+                    $skillNameArr = explode(', ', $teacher['skill_names'] ?? '');
+                    $totalTeacherSkills = count(array_filter($skillIdArr));
+                    ?>
+                    <?php if ($totalTeacherSkills === 1): ?>
+                        <a href="/actions/request_session.php?teacher_id=<?= $teacher['id'] ?>&skill_id=<?= (int)$skillIdArr[0] ?>"
+                           class="btn btn-primary btn-sm">Request Session</a>
+                    <?php else: ?>
+                        <form method="GET" action="/actions/request_session.php" class="flex gap-8 items-center flex-wrap">
+                            <input type="hidden" name="teacher_id" value="<?= $teacher['id'] ?>">
+                            <select name="skill_id" class="form-select-inline" required>
+                                <?php foreach ($skillIdArr as $si => $sid): ?>
+                                    <?php if ((int)$sid > 0): ?>
+                                    <option value="<?= (int)$sid ?>">
+                                        <?= h($skillNameArr[$si] ?? '') ?>
+                                    </option>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="submit" class="btn btn-primary btn-sm">Request</button>
+                        </form>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         <?php endforeach; ?>

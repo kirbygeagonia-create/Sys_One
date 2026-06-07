@@ -974,4 +974,5 @@ select.is-loading {
 
 /* ===== Learners Widget Star ===== */
 .star-static { color: #f59e0b; }
+.fw-600 { font-weight: 600; }
 .dot-active { color: var(--success); font-size: 0.5rem; vertical-align: middle; }

@@ -30,6 +30,16 @@ try {
     // Switch to the database
     $pdo->exec("USE `$dbName`");
 
+    // Check if already installed
+    try {
+        $check = $pdo->query("SELECT COUNT(*) FROM users");
+        if ($check && (int)$check->fetchColumn() > 0) {
+            die("SkillLoop is already installed. Delete this file or run migrations manually.\n");
+        }
+    } catch (PDOException $e) {
+        // Table doesn't exist — proceed with install
+    }
+
     // Read and execute schema.sql
     $schemaPath = __DIR__ . '/sql/schema.sql';
     if (!file_exists($schemaPath)) {

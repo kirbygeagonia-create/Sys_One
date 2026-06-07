@@ -173,8 +173,6 @@ CREATE INDEX idx_sessions_request ON sessions(request_id);
 CREATE INDEX idx_sessions_status ON sessions(status, scheduled_at);
 CREATE INDEX idx_notifications_user_read ON notifications(user_id, is_read, created_at);
 CREATE INDEX idx_badges_recipient ON badges(recipient_id);
-CREATE INDEX idx_password_reset_token ON password_reset_tokens(token);
-
 -- Password reset tokens
 CREATE TABLE password_reset_tokens (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -185,12 +183,12 @@ CREATE TABLE password_reset_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+CREATE INDEX idx_password_reset_token ON password_reset_tokens(token);
 
 -- Database-level constraints
 ALTER TABLE users ADD CONSTRAINT chk_credits_floor CHECK (credits >= 0);
 ALTER TABLE users ADD CONSTRAINT chk_reputation CHECK (reputation BETWEEN 0.0 AND 5.0);
 ALTER TABLE sessions ADD CONSTRAINT chk_duration CHECK (duration > 0);
-ALTER TABLE sessions ADD COLUMN IF NOT EXISTS reminded_at TIMESTAMP NULL DEFAULT NULL;
 
 -- Seed categories and skills
 INSERT INTO skill_categories (name, icon) VALUES

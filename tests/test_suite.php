@@ -259,6 +259,64 @@ test('No native confirm() dialogs remain', count($confirmFiles) === 0,
     count($confirmFiles) > 0 ? 'Found in: ' . implode(', ', $confirmFiles) : '');
 
 // ============================================================
+// 12c. ADDITIONAL AUDIT CHECKS (from SkillLoop_Final_Audit.md)
+// ============================================================
+
+// C1: Schema ordering — password_reset_tokens table must precede its index
+$tablePos = strpos($schema, 'CREATE TABLE password_reset_tokens');
+$indexPos = strpos($schema, 'CREATE INDEX idx_password_reset_token');
+test('Schema: password_reset_tokens table defined before its index',
+    $tablePos !== false && $indexPos !== false && $tablePos < $indexPos);
+
+// C2: No nested beginTransaction in request_session.php
+$rs = file_get_contents($base . '/actions/request_session.php');
+$transactionCount = substr_count($rs, 'beginTransaction');
+test('request_session.php: only one beginTransaction call (no nested transaction)',
+    $transactionCount <= 1);
+
+// C3: Profile POST handler comes before header.php include
+$profileContent = file_get_contents($base . '/pages/profile.php');
+$postPos   = strpos($profileContent, "REQUEST_METHOD'] === 'POST'");
+$headerPos = strpos($profileContent, "require_once __DIR__ . '/../includes/header.php'");
+test('profile.php: POST handler runs before header include',
+    $postPos !== false && $headerPos !== false && $postPos < $headerPos);
+
+// H1: session_regenerate_id in register.php
+$reg = file_get_contents($base . '/auth/register.php');
+test('register.php: calls session_regenerate_id after login',
+    strpos($reg, 'session_regenerate_id') !== false);
+
+// H2: badge_level whitelisted in submit_review.php
+$review = file_get_contents($base . '/actions/submit_review.php');
+test('submit_review.php: badge_level validated with in_array',
+    strpos($review, 'in_array($badgeLevel') !== false || strpos($review, "in_array(\$badgeLevel") !== false);
+
+// H3: Star ArrowKey uses closest('label') traversal
+test('script.js: star ArrowKey uses closest(label) for DOM traversal',
+    strpos($js, "closest('label')") !== false);
+
+// M1: dashboard.php div balance
+$dash = file_get_contents($base . '/pages/dashboard.php');
+$opens  = substr_count($dash, '<div');
+$closes = substr_count($dash, '</div>');
+test('dashboard.php: equal number of opening and closing divs', $opens === $closes,
+    "Opens: $opens, Closes: $closes");
+
+// M3: send_message.php returns JSON, not redirect
+$sm = file_get_contents($base . '/actions/send_message.php');
+test('send_message.php: returns JSON response (not redirect)',
+    strpos($sm, "json_encode(['success'") !== false);
+test('send_message.php: has JSON success response',
+    strpos($sm, "json_encode(['success' => true])") !== false ||
+    strpos($sm, 'json_encode([\'success\' => true])') !== false);
+
+// D2: robots.txt exists
+test('robots.txt exists', file_exists($base . '/robots.txt'));
+
+// D4: health.php exists
+test('health.php exists', file_exists($base . '/health.php'));
+
+// ============================================================
 // 13. DATABASE CONNECTION TEST
 // ============================================================
 try {

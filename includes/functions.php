@@ -158,16 +158,16 @@ function getUserBadges($pdo, $userId) {
 /**
  * Get user's credit transactions
  */
-function getCreditTransactions($pdo, $userId, $limit = 20) {
+function getCreditTransactions($pdo, $userId, $limit = 20, $offset = 0) {
     $stmt = $pdo->prepare("
         SELECT ct.*, u.name AS counterparty_name
         FROM credit_transactions ct
         LEFT JOIN users u ON ct.counterparty_id = u.id
         WHERE ct.user_id = ?
         ORDER BY ct.created_at DESC
-        LIMIT ?
+        LIMIT ? OFFSET ?
     ");
-    $stmt->execute([$userId, $limit]);
+    $stmt->execute([$userId, $limit, $offset]);
     return $stmt->fetchAll();
 }
 

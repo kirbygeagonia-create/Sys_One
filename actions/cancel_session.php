@@ -50,13 +50,16 @@ addCredits($pdo, $session['requester_id'], 1, 'bonus', null, 'session_refund', $
 $otherId = $session['requester_id'] == $userId ? $session['teacher_id'] : $session['requester_id'];
 $canceller = getUserById($pdo, $userId);
 createNotification($pdo, $otherId, 'session_cancelled',
-    $canceller['name'] . ' cancelled the ' . $session['skill_name'] . ' session.',
+    $canceller['name'] . ' cancelled the ' . $session['skill_name'] . ' session. 1 credit refunded.',
     '/pages/sessions.php'
 );
-createNotification($pdo, $session['requester_id'], 'credit_refund',
-    '1 credit has been refunded due to session cancellation.',
-    '/pages/credits.php'
-);
+// Send a separate credit notification only if the teacher cancelled (requester is the other party)
+if ($userId === $session['teacher_id']) {
+    createNotification($pdo, $session['requester_id'], 'credit_refund',
+        '1 credit has been refunded due to session cancellation by ' . $canceller['name'] . '.',
+        '/pages/credits.php'
+    );
+}
 
 setFlash('info', 'Session cancelled. Credit refunded.');
 header('Location: /pages/sessions.php');

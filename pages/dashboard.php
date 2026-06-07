@@ -98,7 +98,6 @@ $pageTitle = 'Dashboard'; require_once __DIR__ . '/../includes/header.php';
 <?php endif; ?>
 
 <div class="grid-2">
-    <div class="grid-2">
     <!-- Upcoming Sessions -->
     <div class="card">
         <div class="card-header">

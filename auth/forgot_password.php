@@ -42,12 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ";
 
             sendEmail($user['email'], 'Reset your SkillLoop password', $emailBody);
-            setFlash('success', 'If an account with that email exists, a reset link has been sent.');
+            $sent = true;
         } else {
-            // Don't reveal if email exists
+            // Same message whether found or not — prevents email enumeration
             $sent = true;
         }
-        $sent = true;
     }
 }
 

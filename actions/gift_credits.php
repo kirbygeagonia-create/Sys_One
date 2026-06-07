@@ -45,6 +45,10 @@ if (!checkRateLimit($pdo, $ip, 'gift_credits', 5, 60)) {
     exit;
 }
 
+// Get sender name for transaction description — fetch before transaction
+$sender = getCurrentUser($pdo);
+$senderName = $sender ? $sender['name'] : 'Someone';
+
 try {
     $pdo->beginTransaction();
 
@@ -73,11 +77,10 @@ try {
     $stmt->execute([$userId, $recipientId, $amount, 'Gift to ' . $recipient['name']]);
 
     $stmt = $pdo->prepare("INSERT INTO credit_transactions (user_id, counterparty_id, amount, type, description) VALUES (?, ?, ?, 'earn', ?)");
-    $stmt->execute([$recipientId, $userId, $amount, 'Gift from you']);
+    $stmt->execute([$recipientId, $userId, $amount, 'Gift from ' . $senderName]);
 
     $pdo->commit();
 
-    $sender = getCurrentUser($pdo);
     createNotification($pdo, $recipientId, 'credit_gift',
         $sender['name'] . ' gifted you ' . $amount . ' credit(s)!',
         '/pages/credits.php'

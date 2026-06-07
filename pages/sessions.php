@@ -252,11 +252,12 @@ $pageTitle = 'Sessions'; require_once __DIR__ . '/../includes/header.php';
                     <?php endif; ?>
                 </div>
 
-                <form method="POST" action="/actions/send_message.php" class="flex gap-8">
+                <form class="flex gap-8" id="chatForm_<?= $session['id'] ?>"
+                      onsubmit="sendChatMessage(event, <?= $session['id'] ?>, '<?= generateCsrfToken() ?>')">
                     <?= csrfField() ?>
                     <input type="hidden" name="session_id" value="<?= $session['id'] ?>">
                     <textarea name="message" placeholder="Type your message..." required
-                              class="chat-input"></textarea>
+                              class="chat-input" id="chatInput_<?= $session['id'] ?>"></textarea>
                     <button type="submit" class="btn btn-primary btn-sm chat-send-btn">
                         <i class="fas fa-paper-plane"></i> Send
                     </button>

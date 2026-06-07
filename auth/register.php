@@ -48,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             addCredits($pdo, $userId, 3, 'bonus', null, 'welcome', null, 'Welcome bonus credits');
 
             $_SESSION['user_id'] = $userId;
+            session_regenerate_id(true);
+            $_SESSION['last_activity'] = time();
             setFlash('success', 'Welcome to SkillLoop! You received 3 free credits to get started.');
             header('Location: /pages/dashboard.php');
             exit;

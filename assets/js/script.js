@@ -287,12 +287,18 @@ document.querySelectorAll('.star-rating .star').forEach(function(star) {
             star.click();
         }
         if (e.key === 'ArrowRight') {
-            var next = star.nextElementSibling;
-            if (next && next.classList.contains('star')) { next.focus(); next.click(); }
+            var nextLabel = star.closest('label').nextElementSibling;
+            if (nextLabel) {
+                var nextStar = nextLabel.querySelector('.star');
+                if (nextStar) { nextStar.focus(); nextStar.click(); }
+            }
         }
         if (e.key === 'ArrowLeft') {
-            var prev = star.previousElementSibling;
-            if (prev && prev.classList.contains('star')) { prev.focus(); prev.click(); }
+            var prevLabel = star.closest('label').previousElementSibling;
+            if (prevLabel) {
+                var prevStar = prevLabel.querySelector('.star');
+                if (prevStar) { prevStar.focus(); prevStar.click(); }
+            }
         }
     });
 });
@@ -393,4 +399,53 @@ function copyProfileLink(btn) {
     }).catch(function() {
         showToast('Could not copy link.', 'error');
     });
+}
+
+// AJAX chat message send — keeps modal open
+function sendChatMessage(e, sessionId, csrfToken) {
+    e.preventDefault();
+    var textarea = document.getElementById('chatInput_' + sessionId);
+    var message  = textarea ? textarea.value.trim() : '';
+    if (!message) return;
+
+    var btn = e.target.querySelector('button[type="submit"]');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+
+    fetch('/actions/send_message.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'session_id=' + encodeURIComponent(sessionId) +
+              '&message='   + encodeURIComponent(message) +
+              '&csrf_token=' + encodeURIComponent(csrfToken)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            var area = document.querySelector('#chatModal_' + sessionId + ' .chat-msg-area');
+            if (area) {
+                var div = document.createElement('div');
+                div.className = 'chat-msg chat-msg-self';
+                div.innerHTML = '<div class="chat-msg-bubble">' +
+                    '<p class="chat-msg-text">' + escapeHtml(message) + '</p>' +
+                    '<span class="chat-msg-time">You, just now</span>' +
+                    '</div>';
+                area.appendChild(div);
+                area.scrollTop = area.scrollHeight;
+            }
+            if (textarea) textarea.value = '';
+        } else {
+            showToast(data.error || 'Message failed. Try again.', 'error');
+        }
+    })
+    .catch(function() { showToast('Connection error. Try again.', 'error'); })
+    .finally(function() {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send'; }
+    });
+}
+
+// HTML escape helper for chat bubbles
+function escapeHtml(str) {
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(str));
+    return d.innerHTML;
 }

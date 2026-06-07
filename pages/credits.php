@@ -5,7 +5,18 @@ require_once __DIR__ . '/../config/database.php';
 
 $userId = $_SESSION['user_id'];
 $user = getCurrentUser($pdo);
-$transactions = getCreditTransactions($pdo, $userId);
+
+// Transaction pagination
+$txnPerPage = 20;
+$txnPage    = max(1, (int)($_GET['page'] ?? 1));
+$txnOffset  = ($txnPage - 1) * $txnPerPage;
+
+$countStmt = $pdo->prepare("SELECT COUNT(*) FROM credit_transactions WHERE user_id = ?");
+$countStmt->execute([$userId]);
+$txnTotal = (int)$countStmt->fetchColumn();
+$txnPages = max(1, ceil($txnTotal / $txnPerPage));
+
+$transactions = getCreditTransactions($pdo, $userId, $txnPerPage, $txnOffset);
 
 $pageTitle = 'Credits'; require_once __DIR__ . '/../includes/header.php';
 ?>
@@ -82,6 +93,24 @@ $pageTitle = 'Credits'; require_once __DIR__ . '/../includes/header.php';
                 </tbody>
             </table>
         </div>
+    <?php endif; ?>
+
+    <?php if ($txnPages > 1): ?>
+    <div class="pagination">
+        <?php if ($txnPage > 1): ?>
+            <a href="?page=<?= $txnPage - 1 ?>">&laquo; Prev</a>
+        <?php endif; ?>
+        <?php for ($i = 1; $i <= $txnPages; $i++): ?>
+            <?php if ($i == $txnPage): ?>
+                <span class="active"><?= $i ?></span>
+            <?php else: ?>
+                <a href="?page=<?= $i ?>"><?= $i ?></a>
+            <?php endif; ?>
+        <?php endfor; ?>
+        <?php if ($txnPage < $txnPages): ?>
+            <a href="?page=<?= $txnPage + 1 ?>">Next &raquo;</a>
+        <?php endif; ?>
+    </div>
     <?php endif; ?>
 </div>
 

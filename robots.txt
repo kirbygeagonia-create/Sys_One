@@ -1,0 +1,12 @@
+User-agent: *
+Disallow: /auth/
+Disallow: /actions/
+Disallow: /config/
+Disallow: /includes/
+Disallow: /cron/
+Disallow: /tests/
+Disallow: /uploads/
+Allow: /
+Allow: /pages/browse.php
+Allow: /pages/profile.php
+Allow: /index.php

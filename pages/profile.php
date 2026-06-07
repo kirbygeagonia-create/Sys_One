@@ -35,35 +35,37 @@ $stmt = $pdo->prepare("
 $stmt->execute([$profileId]);
 $taughtSessions = (int)$stmt->fetchColumn();
 
-$pageTitle = 'Profile'; require_once __DIR__ . '/../includes/header.php';
-
 $isOwner = isset($_SESSION['user_id']) && $_SESSION['user_id'] == $profileId;
 
-// Handle profile update for owner
+// Handle profile update BEFORE including header so flash messages display correctly
 if ($isOwner && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     requireCsrf();
     $name = trim($_POST['name'] ?? '');
     $bio = trim($_POST['bio'] ?? '');
     $location = trim($_POST['location'] ?? '');
+    $avail = trim($_POST['availability'] ?? '');
 
-    if ($name) {
-        $avail = trim($_POST['availability'] ?? '');
-        if (strlen($name) > 100) {
-            setFlash('error', 'Name must be 100 characters or fewer.');
-        } elseif (strlen($bio) > 1000) {
-            setFlash('error', 'Bio must be 1000 characters or fewer.');
-        } elseif (strlen($location) > 100) {
-            setFlash('error', 'Location must be 100 characters or fewer.');
-        } elseif (strlen($avail) > 500) {
-            setFlash('error', 'Availability must be 500 characters or fewer.');
-        } else {
-            $stmt = $pdo->prepare("UPDATE users SET name = ?, bio = ?, location = ?, availability = ? WHERE id = ?");
-            $stmt->execute([$name, $bio, $location, $avail, $profileId]);
-            $profile = getUserById($pdo, $profileId);
-            setFlash('success', 'Profile updated!');
-        }
+    if (empty($name)) {
+        setFlash('error', 'Name is required.');
+    } elseif (strlen($name) > 100) {
+        setFlash('error', 'Name must be 100 characters or fewer.');
+    } elseif (strlen($bio) > 1000) {
+        setFlash('error', 'Bio must be 1000 characters or fewer.');
+    } elseif (strlen($location) > 100) {
+        setFlash('error', 'Location must be 100 characters or fewer.');
+    } elseif (strlen($avail) > 500) {
+        setFlash('error', 'Availability must be 500 characters or fewer.');
+    } else {
+        $stmt = $pdo->prepare("UPDATE users SET name = ?, bio = ?, location = ?, availability = ? WHERE id = ?");
+        $stmt->execute([$name, $bio, $location, $avail, $profileId]);
+        $profile = getUserById($pdo, $profileId);
+        setFlash('success', 'Profile updated!');
     }
+    header('Location: /pages/profile.php?id=' . $profileId);
+    exit;
 }
+
+$pageTitle = 'Profile'; require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="profile-header">

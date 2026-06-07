@@ -62,16 +62,13 @@ if ($updated['requester_confirmed'] && $updated['teacher_confirmed']) {
     // Credit already reserved at request time; teacher earns the credit
     addCredits($pdo, $teacherId, 1, 'earn', $requesterId, 'session', $sessionId, 'Session: ' . $session['skill_name']);
 
-    // Notify both parties
-    $requester = getUserById($pdo, $requesterId);
-    $teacher = getUserById($pdo, $teacherId);
-
+    // Notify both parties — names already available from the JOIN query
     createNotification($pdo, $requesterId, 'session_complete',
-        'Your session with ' . $teacher['name'] . ' is complete! Leave a review.',
+        'Your session with ' . $session['teacher_name'] . ' is complete! Leave a review.',
         '/actions/submit_review.php?session_id=' . $sessionId
     );
     createNotification($pdo, $teacherId, 'session_complete',
-        'Your session with ' . $requester['name'] . ' is complete! You earned 1 credit.',
+        'Your session with ' . $session['requester_name'] . ' is complete! You earned 1 credit.',
         '/actions/submit_review.php?session_id=' . $sessionId
     );
 
